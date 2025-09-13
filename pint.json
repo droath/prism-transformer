@@ -1,0 +1,11 @@
+{
+    "preset": "laravel",
+    "rules": {
+        "phpdoc_trim": true,
+        "phpdoc_align": false,
+        "phpdoc_indent": true,
+        "ordered_imports": false,
+        "phpdoc_separation": true,
+        "new_with_parentheses": false
+    }
+}

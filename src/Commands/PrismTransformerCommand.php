@@ -1,12 +1,12 @@
 <?php
 
-namespace VendorName\Skeleton\Commands;
+namespace Droath\PrismTransformer\Commands;
 
 use Illuminate\Console\Command;
 
-class SkeletonCommand extends Command
+class PrismTransformerCommand extends Command
 {
-    public $signature = 'skeleton';
+    public $signature = 'prism-transformer';
 
     public $description = 'My command';
 
