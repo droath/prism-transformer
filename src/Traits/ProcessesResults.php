@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Droath\PrismTransformer\Traits;
 
-use Droath\PrismTransformer\TransformationResult;
+use Droath\PrismTransformer\ValueObjects\TransformationResult;
 
 /**
  * Trait providing result processing methods for transformers.

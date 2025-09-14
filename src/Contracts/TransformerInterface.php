@@ -7,7 +7,7 @@ namespace Droath\PrismTransformer\Contracts;
 use Prism\Prism\Schema\ObjectSchema;
 use Illuminate\Database\Eloquent\Model;
 use Droath\PrismTransformer\Enums\Provider;
-use Droath\PrismTransformer\TransformationResult;
+use Droath\PrismTransformer\ValueObjects\TransformationResult;
 
 /**
  * Primary interface defining the core transformation contract.

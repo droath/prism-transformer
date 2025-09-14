@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Droath\PrismTransformer\TransformationResult;
+use Droath\PrismTransformer\ValueObjects\TransformationResult;
 
 describe('TransformationResult', function () {
     test('can be instantiated with all parameters', function () {

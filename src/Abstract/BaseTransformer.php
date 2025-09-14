@@ -8,7 +8,7 @@ use Prism\Prism\Prism;
 use Prism\Prism\Schema\ObjectSchema;
 use Illuminate\Database\Eloquent\Model;
 use Droath\PrismTransformer\Enums\Provider;
-use Droath\PrismTransformer\TransformationResult;
+use Droath\PrismTransformer\ValueObjects\TransformationResult;
 use Droath\PrismTransformer\Contracts\TransformerInterface;
 
 /**
@@ -117,7 +117,7 @@ abstract class BaseTransformer implements TransformerInterface
                 ->asStructured();
 
             return new TransformationResult(
-                status: 'completed',
+                status: TransformationResult::STATUS_COMPLETED,
                 data: $response,
                 metadata: [
                     'model' => $this->model(),
@@ -127,7 +127,7 @@ abstract class BaseTransformer implements TransformerInterface
             );
         } catch (\Exception $e) {
             return new TransformationResult(
-                status: 'failed',
+                status: TransformationResult::STATUS_FAILED,
                 data: null,
                 errors: [$e->getMessage()]
             );
