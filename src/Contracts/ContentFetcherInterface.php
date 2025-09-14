@@ -15,13 +15,13 @@ use Droath\PrismTransformer\Exceptions\FetchException;
 interface ContentFetcherInterface
 {
     /**
-     * Fetch content from the given source.
+     * Fetch content from the given URL.
      *
-     * @param mixed $source The source to fetch content from (URL, file path, etc.)
+     * @param string $url The URL to fetch content from
      *
      * @return string The fetched content as a string
      *
-     * @throws FetchException When content cannot be fetched from the source
+     * @throws FetchException When content cannot be fetched from the URL
      */
-    public function fetch(mixed $source): string;
+    public function fetch(string $url): string;
 }

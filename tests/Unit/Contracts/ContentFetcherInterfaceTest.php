@@ -18,7 +18,12 @@ describe('ContentFetcherInterface Contract', function () {
         $method = $reflection->getMethod('fetch');
 
         expect($method->getParameters())->toHaveCount(1);
-        expect($method->getParameters()[0]->getName())->toBe('source');
+        expect($method->getParameters()[0]->getName())->toBe('url');
+
+        // Check parameter type is string
+        $paramType = $method->getParameters()[0]->getType();
+        expect($paramType)->not->toBeNull();
+        expect($paramType->getName())->toBe('string');
 
         // Check return type is string
         $returnType = $method->getReturnType();
@@ -40,21 +45,17 @@ describe('ContentFetcherInterface Implementation Contract', function () {
     beforeEach(function () {
         $this->fetcher = new class implements ContentFetcherInterface
         {
-            public function fetch(mixed $source): string
+            public function fetch(string $url): string
             {
-                if ($source === 'invalid-url') {
+                if ($url === 'invalid-url') {
                     throw new FetchException('Failed to fetch content from source');
                 }
 
-                if (is_string($source) && str_starts_with($source, 'http')) {
-                    return "Content from: {$source}";
+                if (str_starts_with($url, 'http')) {
+                    return "Content from: {$url}";
                 }
 
-                if (is_array($source)) {
-                    return json_encode($source);
-                }
-
-                return (string) $source;
+                return $url;
             }
         };
     });
@@ -70,22 +71,21 @@ describe('ContentFetcherInterface Implementation Contract', function () {
             ->toThrow(FetchException::class, 'Failed to fetch content from source');
     });
 
-    test('concrete implementation handles various source types', function () {
-        $stringResult = $this->fetcher->fetch('text content');
-        $arrayResult = $this->fetcher->fetch(['key' => 'value']);
-        $intResult = $this->fetcher->fetch(123);
+    test('concrete implementation handles various URL formats', function () {
+        $httpResult = $this->fetcher->fetch('https://example.com');
+        $httpsResult = $this->fetcher->fetch('http://example.com');
+        $pathResult = $this->fetcher->fetch('https://example.com/path');
 
-        expect($stringResult)->toBe('text content');
-        expect($arrayResult)->toBe('{"key":"value"}');
-        expect($intResult)->toBe('123');
+        expect($httpResult)->toBe('Content from: https://example.com');
+        expect($httpsResult)->toBe('Content from: http://example.com');
+        expect($pathResult)->toBe('Content from: https://example.com/path');
     });
 
     test('concrete implementation always returns string', function () {
         $results = [
-            $this->fetcher->fetch('string'),
-            $this->fetcher->fetch(['array']),
-            $this->fetcher->fetch(42),
-            $this->fetcher->fetch(true),
+            $this->fetcher->fetch('https://example.com'),
+            $this->fetcher->fetch('http://test.com'),
+            $this->fetcher->fetch('plain-string'),
         ];
 
         foreach ($results as $result) {
