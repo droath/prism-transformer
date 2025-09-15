@@ -49,14 +49,6 @@ interface TransformerInterface
     public function model(): string;
 
     /**
-     * Default cache ID implementation.
-     *
-     * Generates a unique cache key based on the transformer class,
-     * prompt, provider, model.
-     */
-    public function cacheId(): string;
-
-    /**
      * Handles the transformation pipeline.
      *
      * This method orchestrates the complete transformation flow:

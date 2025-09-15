@@ -7,6 +7,9 @@ namespace Droath\PrismTransformer\Abstract;
 use Prism\Prism\Prism;
 use Prism\Prism\Schema\ObjectSchema;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Contracts\Cache\Repository;
+use Illuminate\Cache\CacheManager;
 use Droath\PrismTransformer\Enums\Provider;
 use Droath\PrismTransformer\Services\ConfigurationService;
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
@@ -24,6 +27,7 @@ use Droath\PrismTransformer\Contracts\TransformerInterface;
 abstract class BaseTransformer implements TransformerInterface
 {
     public function __construct(
+        protected CacheManager $cache,
         protected ConfigurationService $configuration
     ) {}
 
@@ -64,24 +68,17 @@ abstract class BaseTransformer implements TransformerInterface
      */
     public function execute(string $content): TransformerResult
     {
+        if ($result = $this->getCache()) {
+            return $result;
+        }
         $this->beforeTransform($content);
+
         $result = $this->performTransformation($content);
+
+        $this->setCache($result);
         $this->afterTransform($result);
 
         return $result;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function cacheId(): string
-    {
-        return hash('sha256', serialize(array_filter([
-            static::class,
-            $this->prompt(),
-            $this->provider()->value,
-            $this->model(),
-        ])));
     }
 
     /**
@@ -119,9 +116,13 @@ abstract class BaseTransformer implements TransformerInterface
             $response = $structuredBuilder->asStructured();
 
             return TransformerResult::successful(
-                $response->text
+                $response->text,
+                TransformerMetadata::make(
+                    $this->model(),
+                    $this->provider(),
+                    static::class
+                )
             );
-
         } catch (\Throwable $e) {
             return TransformerResult::failed(
                 [$e->getMessage()],
@@ -149,4 +150,83 @@ abstract class BaseTransformer implements TransformerInterface
      * like result validation, caching, logging, etc.
      */
     protected function afterTransform(TransformerResult $result): void {}
+
+    /**
+     * The transformer cache ID.
+     */
+    protected function cacheId(): string
+    {
+        return hash('sha256', serialize(array_filter([
+            static::class,
+            $this->prompt(),
+            $this->provider()->value,
+            $this->model(),
+        ])));
+    }
+
+    /**
+     * Get the transformer cache result.
+     */
+    protected function getCache(): ?TransformerResult
+    {
+        if (! $this->configuration->isCacheEnabled()) {
+            return null;
+        }
+
+        try {
+            return $this->getCacheStore()->get(
+                $this->buildCacheKey(),
+            );
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * Set the transformer cache result.
+     */
+    protected function setCache($result): bool
+    {
+        if (! $this->configuration->isCacheEnabled()) {
+            return false;
+        }
+        $ttl = $this->configuration->getTransformerDataCacheTtl();
+
+        try {
+            return $this->getCacheStore()->put(
+                $this->buildCacheKey(),
+                $result,
+                $ttl
+            );
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * Get the cache store instance.
+     *
+     * @return \Illuminate\Contracts\Cache\Repository
+     *   The cache store.
+     */
+    protected function getCacheStore(): Repository
+    {
+        $storeName = $this->configuration->getCacheStore();
+
+        try {
+            return $this->cache->store($storeName);
+        } catch (\Throwable) {
+            return Cache::store();
+        }
+    }
+
+    /**
+     * Build the cache key with a configured prefix.
+     *
+     * @return string The complete cache key.
+     */
+    protected function buildCacheKey(): string
+    {
+        return "{$this->configuration->getCachePrefix()}:{$this->cacheId()}";
+    }
 }

@@ -111,8 +111,8 @@ return [
 
     'content_fetcher' => [
         'timeout' => env('PRISM_TRANSFORMER_HTTP_TIMEOUT', 30),
-        'connect_timeout' => env('PRISM_TRANSFORMER_CONNECT_TIMEOUT', 10),
         'max_redirects' => env('PRISM_TRANSFORMER_MAX_REDIRECTS', 5),
+        'connect_timeout' => env('PRISM_TRANSFORMER_CONNECT_TIMEOUT', 10),
         'user_agent' => env('PRISM_TRANSFORMER_USER_AGENT', 'PrismTransformer/1.0'),
 
         'retry' => [
@@ -121,10 +121,10 @@ return [
         ],
 
         'validation' => [
-            'max_content_length' => env('PRISM_TRANSFORMER_MAX_CONTENT_LENGTH', 10485760), // 10MB
-            'allowed_schemes' => ['http', 'https'],
             'blocked_domains' => [],
+            'allowed_schemes' => ['http', 'https'],
             'allow_localhost' => env('PRISM_TRANSFORMER_ALLOW_LOCALHOST', false),
+            'max_content_length' => env('PRISM_TRANSFORMER_MAX_CONTENT_LENGTH', 10485760), // 10MB
         ],
     ],
 
@@ -156,5 +156,10 @@ return [
         'enabled' => env('PRISM_TRANSFORMER_CACHE_ENABLED', true),
         'store' => env('PRISM_TRANSFORMER_CACHE_STORE', 'default'),
         'prefix' => env('PRISM_TRANSFORMER_CACHE_PREFIX', 'prism_transformer'),
+
+        'ttl' => [
+            'content_fetch' => env('PRISM_TRANSFORMER_CACHE_TTL_CONTENT', 1800), // 30 minutes
+            'transformer_data' => env('PRISM_TRANSFORMER_CACHE_TTL_TRANSFORMATIONS', 3600), // 1 hour
+        ],
     ],
 ];

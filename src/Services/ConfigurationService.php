@@ -128,6 +128,39 @@ class ConfigurationService
     }
 
     /**
+     * Get all cache TTL configuration.
+     *
+     * @return array<string, int> The cache TTL configuration.
+     */
+    public function getCacheTtlConfig(): array
+    {
+        return config('prism-transformer.cache.ttl', [
+            'content_fetch' => 1800,
+            'transformer_data' => 3600,
+        ]);
+    }
+
+    /**
+     * Get the TTL for content fetch caching.
+     *
+     * @return int The TTL in seconds.
+     */
+    public function getContentFetchCacheTtl(): int
+    {
+        return (int) config('prism-transformer.cache.ttl.content_fetch', 1800);
+    }
+
+    /**
+     * Get the TTL for transformer data caching.
+     *
+     * @return int The TTL in seconds.
+     */
+    public function getTransformerDataCacheTtl(): int
+    {
+        return (int) config('prism-transformer.cache.ttl.transformer_data', 3600);
+    }
+
+    /**
      * Get HTTP timeout for content fetching.
      *
      * @return int The timeout in seconds.

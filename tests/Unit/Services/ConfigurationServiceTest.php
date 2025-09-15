@@ -226,6 +226,56 @@ describe('ConfigurationService', function () {
 
             expect($prefix)->toBe('custom_prefix');
         });
+
+        test('can get transformer data cache TTL', function () {
+            Config::set('prism-transformer.cache.ttl.transformer_data', 7200);
+
+            $ttl = $this->configService->getTransformerDataCacheTtl();
+
+            expect($ttl)->toBe(7200);
+        });
+
+        test('returns default transformer data cache TTL when not configured', function () {
+            $ttl = $this->configService->getTransformerDataCacheTtl();
+
+            expect($ttl)->toBe(3600); // 1 hour default
+        });
+
+        test('can get content fetch cache TTL', function () {
+            Config::set('prism-transformer.cache.ttl.content_fetch', 900);
+
+            $ttl = $this->configService->getContentFetchCacheTtl();
+
+            expect($ttl)->toBe(900);
+        });
+
+        test('returns default content fetch cache TTL when not configured', function () {
+            $ttl = $this->configService->getContentFetchCacheTtl();
+
+            expect($ttl)->toBe(1800); // 30 minutes default
+        });
+
+        test('can get all cache TTL settings', function () {
+            $ttlConfig = [
+                'content_fetch' => 900,
+                'transformer_data' => 7200,
+            ];
+
+            Config::set('prism-transformer.cache.ttl', $ttlConfig);
+
+            $config = $this->configService->getCacheTtlConfig();
+
+            expect($config)->toBe($ttlConfig);
+        });
+
+        test('returns default TTL config when not configured', function () {
+            $config = $this->configService->getCacheTtlConfig();
+
+            expect($config)->toBe([
+                'content_fetch' => 1800,
+                'transformer_data' => 3600,
+            ]);
+        });
     });
 
     describe('configuration validation', function () {

@@ -20,7 +20,7 @@ describe('Complete Transformation Pipeline Integration', function () {
             Config::set('prism-transformer.default_provider', Provider::ANTHROPIC);
             Config::set('prism-transformer.providers.anthropic.default_model', 'claude-3-custom');
 
-            $transformerInterface = new class($this->configService) extends BaseTransformer
+            $transformerInterface = new class($this->app->make(\Illuminate\Cache\CacheManager::class), $this->configService) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -47,7 +47,7 @@ describe('Complete Transformation Pipeline Integration', function () {
             $content = 'Test content for transformation';
             $expectedResult = 'Transformed: Test content for transformation with gpt-4-test';
 
-            $transformerInterface = new class($this->configService) extends BaseTransformer
+            $transformerInterface = new class($this->app->make(\Illuminate\Cache\CacheManager::class), $this->configService) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -80,7 +80,7 @@ describe('Complete Transformation Pipeline Integration', function () {
             $transformedContent = 'Transformed URL content';
 
             // Note: UrlTransformerHandler currently just returns the URL, not fetch content
-            $transformerInterface = new class($this->configService) extends BaseTransformer
+            $transformerInterface = new class($this->app->make(\Illuminate\Cache\CacheManager::class), $this->configService) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -111,7 +111,7 @@ describe('Complete Transformation Pipeline Integration', function () {
 
             $content = 'Sample content for transformation';
 
-            $transformerInterface = new class($this->configService) extends BaseTransformer
+            $transformerInterface = new class($this->app->make(\Illuminate\Cache\CacheManager::class), $this->configService) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -147,7 +147,7 @@ describe('Complete Transformation Pipeline Integration', function () {
 
             $content = 'Async transformation content';
 
-            $transformerInterface = new class($this->configService) extends BaseTransformer
+            $transformerInterface = new class($this->app->make(\Illuminate\Cache\CacheManager::class), $this->configService) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -175,7 +175,7 @@ describe('Complete Transformation Pipeline Integration', function () {
             $content = 'Initial content';
 
             // First transformer: uppercase
-            $uppercaseTransformer = new class($this->configService) extends BaseTransformer
+            $uppercaseTransformer = new class($this->app->make(\Illuminate\Cache\CacheManager::class), $this->configService) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -189,7 +189,7 @@ describe('Complete Transformation Pipeline Integration', function () {
             };
 
             // Second transformer: add prefix
-            $prefixTransformer = new class($this->configService) extends BaseTransformer
+            $prefixTransformer = new class($this->app->make(\Illuminate\Cache\CacheManager::class), $this->configService) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -224,7 +224,7 @@ describe('Complete Transformation Pipeline Integration', function () {
         test('handles transformation errors gracefully', function () {
             $content = 'Error test content';
 
-            $errorTransformer = new class($this->configService) extends BaseTransformer
+            $errorTransformer = new class($this->app->make(\Illuminate\Cache\CacheManager::class), $this->configService) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -248,7 +248,7 @@ describe('Complete Transformation Pipeline Integration', function () {
         });
 
         test('handles invalid content gracefully', function () {
-            $transformerInterface = new class($this->configService) extends BaseTransformer
+            $transformerInterface = new class($this->app->make(\Illuminate\Cache\CacheManager::class), $this->configService) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -293,7 +293,7 @@ describe('Complete Transformation Pipeline Integration', function () {
             Config::set('prism-transformer.providers.openai.default_model', 'gpt-4');
             Config::set('prism-transformer.providers.openai.temperature', 0.3);
 
-            $transformerInterface = new class($this->configService) extends BaseTransformer
+            $transformerInterface = new class($this->app->make(\Illuminate\Cache\CacheManager::class), $this->configService) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -322,7 +322,7 @@ describe('Complete Transformation Pipeline Integration', function () {
             Config::set('prism-transformer.providers.anthropic.default_model', 'claude-3-sonnet');
             Config::set('prism-transformer.providers.anthropic.max_tokens', 8192);
 
-            $transformerInterface = new class($this->configService) extends BaseTransformer
+            $transformerInterface = new class($this->app->make(\Illuminate\Cache\CacheManager::class), $this->configService) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -351,7 +351,7 @@ describe('Complete Transformation Pipeline Integration', function () {
             Config::set('prism-transformer.providers.ollama.base_url', 'http://localhost:11434');
             Config::set('prism-transformer.providers.ollama.timeout', 180);
 
-            $transformerInterface = new class($this->configService) extends BaseTransformer
+            $transformerInterface = new class($this->app->make(\Illuminate\Cache\CacheManager::class), $this->configService) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -405,7 +405,7 @@ describe('Complete Transformation Pipeline Integration', function () {
 
     describe('service container integration throughout pipeline', function () {
         test('configuration service is available throughout transformation', function () {
-            $transformerInterface = new class($this->configService) extends BaseTransformer
+            $transformerInterface = new class($this->app->make(\Illuminate\Cache\CacheManager::class), $this->configService) extends BaseTransformer
             {
                 public function prompt(): string
                 {

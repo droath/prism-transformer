@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Droath\PrismTransformer\ContentFetchers;
 
-use Droath\PrismTransformer\Contracts\ContentFetcherInterface;
+use Droath\PrismTransformer\Abstract\BaseContentFetcher;
 use Droath\PrismTransformer\Exceptions\FetchException;
+use Droath\PrismTransformer\Services\ConfigurationService;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory as HttpFactory;
+use Illuminate\Cache\CacheManager;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
 
@@ -17,40 +19,45 @@ use Psr\Log\LoggerInterface;
  * This class provides HTTP content fetching capabilities with proper error
  * handling, logging, and URL validation for the prism-transformer package.
  */
-class BasicHttpFetcher implements ContentFetcherInterface
+class BasicHttpFetcher extends BaseContentFetcher
 {
+    protected int $timeout;
+
     /**
      * Create a new BasicHttpFetcher instance.
      *
      * @param HttpFactory $httpFactory Laravel HTTP client factory
      * @param LoggerInterface $logger Logger for error and debug information
-     * @param int $timeout Request timeout in seconds
+     * @param CacheManager|null $cache Cache manager for response caching
+     * @param ConfigurationService|null $configuration Configuration service for cache settings
+     * @param int|null $timeout Request timeout in seconds (defaults to configured value or 30)
      *
      * @throws InvalidArgumentException When timeout is not positive
      */
     public function __construct(
         protected HttpFactory $httpFactory,
         protected LoggerInterface $logger,
-        protected int $timeout = 30
+        ?CacheManager $cache = null,
+        ?ConfigurationService $configuration = null,
+        ?int $timeout = null
     ) {
-        if ($timeout < 1) {
+        parent::__construct($cache, $configuration);
+
+        $this->timeout = $timeout ?? $configuration?->getHttpTimeout() ?? 30;
+
+        if ($this->timeout < 1) {
             throw new InvalidArgumentException('Timeout must be positive');
         }
     }
 
     /**
-     * Fetch content from the given URL.
-     *
-     * @param string $url The URL to fetch content from
-     *
-     * @return string The fetched content as a string
-     *
-     * @throws FetchException When content cannot be fetched from the URL
+     * {@inheritDoc}
      */
-    public function fetch(string $url): string
+    protected function performFetch(string $url): string
     {
         // Sanitize and validate URL format
         $sanitizedUrl = $this->sanitizeUrl($url);
+
         if (! $this->isValidUrl($sanitizedUrl)) {
             throw new FetchException(
                 'Invalid URL format',

@@ -8,6 +8,7 @@ use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Config;
 use Psr\Log\LoggerInterface;
 
 describe('BasicHttpFetcher', function () {
@@ -201,5 +202,41 @@ describe('BasicHttpFetcher with custom configuration', function () {
         $result = $fetcher->fetch($url);
 
         expect($result)->toBe('success');
+    });
+
+    test('uses configured timeout when no explicit timeout provided', function () {
+        Config::set('prism-transformer.content_fetcher.timeout', 60);
+
+        $httpFactory = mock(HttpFactory::class);
+        $pendingRequest = mock(PendingRequest::class);
+        $response = mock(Response::class);
+        $logger = mock(LoggerInterface::class);
+        $configuration = new \Droath\PrismTransformer\Services\ConfigurationService();
+
+        $fetcher = new BasicHttpFetcher(
+            httpFactory: $httpFactory,
+            logger: $logger,
+            configuration: $configuration
+        );
+
+        $url = 'https://example.com';
+
+        $httpFactory->shouldReceive('timeout')
+            ->with(60) // Should use configured timeout
+            ->andReturn($pendingRequest);
+
+        $pendingRequest->shouldReceive('get')
+            ->with($url)
+            ->andReturn($response);
+
+        $response->shouldReceive('successful')
+            ->andReturn(true);
+
+        $response->shouldReceive('body')
+            ->andReturn('configured timeout success');
+
+        $result = $fetcher->fetch($url);
+
+        expect($result)->toBe('configured timeout success');
     });
 });
