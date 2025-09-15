@@ -28,6 +28,7 @@ _ide_helper_models.php
 .claude
 .agent-os
 CLAUDE.md
+.aiassistant/
 
 # Misc
 phpunit.xml

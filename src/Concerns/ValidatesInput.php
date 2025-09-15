@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Droath\PrismTransformer\Traits;
+namespace Droath\PrismTransformer\Concerns;
 
 use Droath\PrismTransformer\Exceptions\InvalidInputException;
 

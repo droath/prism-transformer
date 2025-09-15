@@ -13,7 +13,7 @@ use Exception;
  * returns false, indicating that the transformer cannot handle the
  * provided input type.
  */
-class UnsupportedTypeException extends TransformationException
+class UnsupportedTypeException extends TransformerException
 {
     protected mixed $input;
 

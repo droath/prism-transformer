@@ -51,11 +51,51 @@ enum Provider: string
     }
 
     /**
-     * Returns the default model string based on the current instance.
+     * Returns the default model string based on configuration or fallback defaults.
      *
-     * @return string The default model name corresponding to the current context.
+     * @return string The default model name from configuration or hardcoded fallback.
      */
     public function defaultModel(): string
+    {
+        $configKey = "prism-transformer.providers.{$this->value}.default_model";
+
+        return config($configKey) ?? $this->getFallbackModel();
+    }
+
+    /**
+     * Gets the complete provider configuration from the config.
+     *
+     * @return array<string, mixed> The provider configuration array.
+     */
+    public function getConfig(): array
+    {
+        $configKey = "prism-transformer.providers.{$this->value}";
+        $config = config($configKey, []);
+
+        return is_array($config) ? $config : [];
+    }
+
+    /**
+     * Gets a specific configuration value for this provider.
+     *
+     * @param string $key The configuration key to retrieve.
+     * @param mixed $default The default value if the key doesn't exist.
+     *
+     * @return mixed The configuration value or default.
+     */
+    public function getConfigValue(string $key, mixed $default = null): mixed
+    {
+        $configKey = "prism-transformer.providers.{$this->value}.{$key}";
+
+        return config($configKey, $default);
+    }
+
+    /**
+     * Returns the hardcoded fallback model for this provider.
+     *
+     * @return string The fallback model name when configuration is not available.
+     */
+    private function getFallbackModel(): string
     {
         return match ($this) {
             self::XAI => 'grok-beta',

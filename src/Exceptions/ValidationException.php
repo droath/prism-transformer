@@ -13,7 +13,7 @@ use Exception;
  * returns false, indicating that the input data does not meet the
  * requirements for transformation.
  */
-class ValidationException extends TransformationException
+class ValidationException extends TransformerException
 {
     protected mixed $input;
 

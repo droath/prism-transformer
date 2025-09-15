@@ -12,7 +12,7 @@ use Exception;
  * This exception provides a foundation for all transformation errors
  * and includes context information to aid in debugging.
  */
-class TransformationException extends Exception
+class TransformerException extends Exception
 {
     /**
      * Additional context information about the transformation error.

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Droath\PrismTransformer\Traits;
+namespace Droath\PrismTransformer\Concerns;
 
-use Droath\PrismTransformer\ValueObjects\TransformationResult;
+use Droath\PrismTransformer\ValueObjects\TransformerResult;
 
 /**
  * Trait providing result processing methods for transformers.
@@ -17,7 +17,7 @@ trait ProcessesResults
     /**
      * Hook into the afterTransform method to process results.
      */
-    protected function afterTransform(TransformationResult $result): void
+    protected function afterTransform(TransformerResult $result): void
     {
         if ($result->isSuccessful()) {
             $this->processSuccessfulResult($result);
@@ -31,5 +31,5 @@ trait ProcessesResults
      * Override this method in concrete classes to implement
      * specific result processing logic.
      */
-    protected function processSuccessfulResult(TransformationResult $result): void {}
+    protected function processSuccessfulResult(TransformerResult $result): void {}
 }

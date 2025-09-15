@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Droath\PrismTransformer\Traits\ValidatesInput;
+use Droath\PrismTransformer\Concerns\ValidatesInput;
 use Droath\PrismTransformer\Exceptions\InvalidInputException;
 
 describe('ValidatesInput Trait', function () {

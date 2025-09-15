@@ -12,7 +12,7 @@ use Exception;
  * This exception is thrown when input data fails validation or is not
  * in the expected format for a particular transformer.
  */
-class InvalidInputException extends TransformationException
+class InvalidInputException extends TransformerException
 {
     /**
      * Create a new invalid input exception.

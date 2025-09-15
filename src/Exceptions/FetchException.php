@@ -12,7 +12,7 @@ use Exception;
  * This exception is thrown when a ContentFetcher implementation fails
  * to retrieve content from the specified source.
  */
-class FetchException extends TransformationException
+class FetchException extends TransformerException
 {
     /**
      * Create a new fetch exception.

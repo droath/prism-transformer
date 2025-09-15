@@ -7,7 +7,7 @@ namespace Droath\PrismTransformer\Contracts;
 use Prism\Prism\Schema\ObjectSchema;
 use Illuminate\Database\Eloquent\Model;
 use Droath\PrismTransformer\Enums\Provider;
-use Droath\PrismTransformer\ValueObjects\TransformationResult;
+use Droath\PrismTransformer\ValueObjects\TransformerResult;
 
 /**
  * Primary interface defining the core transformation contract.
@@ -66,7 +66,7 @@ interface TransformerInterface
      *
      * @param string $content The content to transform.
      */
-    public function execute(string $content): TransformationResult;
+    public function execute(string $content): TransformerResult;
 
     /**
      * Get the output format specification.

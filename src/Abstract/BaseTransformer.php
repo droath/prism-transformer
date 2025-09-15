@@ -8,7 +8,9 @@ use Prism\Prism\Prism;
 use Prism\Prism\Schema\ObjectSchema;
 use Illuminate\Database\Eloquent\Model;
 use Droath\PrismTransformer\Enums\Provider;
-use Droath\PrismTransformer\ValueObjects\TransformationResult;
+use Droath\PrismTransformer\Services\ConfigurationService;
+use Droath\PrismTransformer\ValueObjects\TransformerResult;
+use Droath\PrismTransformer\ValueObjects\TransformerMetadata;
 use Droath\PrismTransformer\Contracts\TransformerInterface;
 
 /**
@@ -21,6 +23,10 @@ use Droath\PrismTransformer\Contracts\TransformerInterface;
  */
 abstract class BaseTransformer implements TransformerInterface
 {
+    public function __construct(
+        protected ConfigurationService $configuration
+    ) {}
+
     /**
      * {@inheritDoc}
      */
@@ -34,7 +40,7 @@ abstract class BaseTransformer implements TransformerInterface
      */
     public function provider(): Provider
     {
-        return Provider::OPENAI;
+        return $this->configuration->getDefaultProvider();
     }
 
     /**
@@ -56,7 +62,7 @@ abstract class BaseTransformer implements TransformerInterface
     /**
      * {@inheritDoc}
      */
-    public function execute(string $content): TransformationResult
+    public function execute(string $content): TransformerResult
     {
         $this->beforeTransform($content);
         $result = $this->performTransformation($content);
@@ -79,6 +85,56 @@ abstract class BaseTransformer implements TransformerInterface
     }
 
     /**
+     * Prism PHP integration for LLM transformation.
+     *
+     * This method uses Prism::structured() to perform the actual
+     * AI transformation using the configured provider and model.
+     *
+     * @param string $content
+     *   The content to transform.
+     *
+     * @return TransformerResult
+     *   The transformation results with data and metadata.
+     */
+    protected function performTransformation(string $content): TransformerResult
+    {
+        try {
+            $provider = $this->provider()->toPrism();
+
+            if ($provider === null) {
+                throw new \InvalidArgumentException(
+                    'Invalid provider'
+                );
+            }
+
+            $structuredBuilder = Prism::structured()
+                ->using($provider, $this->model())
+                ->withPrompt($this->prompt());
+
+            // Note: Schema mapping will be implemented in Phase 2
+            // if ($this->outputFormat() !== null) {
+            //     $structuredBuilder = $structuredBuilder->withSchema($this->outputFormat());
+            // }
+
+            $response = $structuredBuilder->asStructured();
+
+            return TransformerResult::successful(
+                $response->text
+            );
+
+        } catch (\Throwable $e) {
+            return TransformerResult::failed(
+                [$e->getMessage()],
+                TransformerMetadata::make(
+                    $this->model(),
+                    $this->provider(),
+                    static::class
+                )
+            );
+        }
+    }
+
+    /**
      * Hook called before the transformation begins.
      *
      * Override in concrete classes or traits for custom pre-processing
@@ -92,45 +148,5 @@ abstract class BaseTransformer implements TransformerInterface
      * Override in concrete classes or traits for custom post-processing
      * like result validation, caching, logging, etc.
      */
-    protected function afterTransform(TransformationResult $result): void {}
-
-    /**
-     * Prism PHP integration for LLM transformation.
-     *
-     * This method uses Prism::structured() to perform the actual
-     * AI transformation using the configured provider and model.
-     */
-    protected function performTransformation(string $content): TransformationResult
-    {
-        try {
-            // TODO: Implement actual Prism PHP integration when package is available
-            // For now, this is a placeholder implementation that demonstrates the structure
-
-            // Note: Schema mapping will be implemented in Phase 2
-            // $schema = app(ModelSchemaMapperInterface::class)->mapModelToSchema($this->outputFormat());
-
-            $provider = $this->provider()->toPrism();
-
-            $response = Prism::structured()
-                ->using($provider, $this->model())
-                ->withPrompt($this->prompt())
-                ->asStructured();
-
-            return new TransformationResult(
-                status: TransformationResult::STATUS_COMPLETED,
-                data: $response,
-                metadata: [
-                    'model' => $this->model(),
-                    'tokens' => $response['tokens'],
-                    'provider' => $provider->value,
-                ]
-            );
-        } catch (\Exception $e) {
-            return new TransformationResult(
-                status: TransformationResult::STATUS_FAILED,
-                data: null,
-                errors: [$e->getMessage()]
-            );
-        }
-    }
+    protected function afterTransform(TransformerResult $result): void {}
 }
