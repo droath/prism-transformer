@@ -8,12 +8,71 @@ use Droath\PrismTransformer\Contracts\TransformerInterface;
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
 use Droath\PrismTransformer\Contracts\ContentFetcherInterface;
 
+/**
+ * Main PrismTransformer class providing fluent interface for AI-powered content transformation.
+ *
+ * This class serves as the primary entry point for the PrismTransformer package,
+ * offering a fluent interface for setting up and executing AI-powered content
+ * transformations. It supports both text content and URL-based content fetching
+ * with customizable transformers and asynchronous processing capabilities.
+ *
+ * The class follows the Builder pattern, allowing method chaining for an
+ * intuitive API:
+ *
+ * @example Basic usage:
+ * ```php
+ * $result = (new PrismTransformer())
+ *     ->text('Content to transform')
+ *     ->using($transformer)
+ *     ->transform();
+ * ```
+ * @example URL-based transformation:
+ * ```php
+ * $result = (new PrismTransformer())
+ *     ->url('https://example.com/article')
+ *     ->using(new ArticleSummarizer())
+ *     ->transform();
+ * ```
+ * @example Asynchronous processing:
+ * ```php
+ * $result = (new PrismTransformer())
+ *     ->text($content)
+ *     ->async()
+ *     ->using($transformer)
+ *     ->transform(); // Queues for background processing
+ * ```
+ *
+ * @api
+ *
+ * @see \Droath\PrismTransformer\Facades\PrismTransformer For facade access
+ */
 class PrismTransformer implements PrismTransformerInterface
 {
+    /**
+     * Whether to execute the transformation asynchronously.
+     *
+     * When true, the transformation will be queued for background processing
+     * using Laravel's queue system instead of executing synchronously.
+     */
     protected bool $async = false;
 
+    /**
+     * The content to be transformed.
+     *
+     * This can be set directly via text() or populated by fetching from a URL
+     * via the url() method. Contains the raw content that will be passed to
+     * the configured transformer.
+     */
     protected ?string $content = null;
 
+    /**
+     * The transformer handler to use for content processing.
+     *
+     * Can be either:
+     * - A Closure that accepts string content and returns TransformerResult
+     * - A TransformerInterface implementation for more complex transformations
+     * - null if no transformer has been configured yet
+     */
     protected null|\Closure|TransformerInterface $transformerHandler = null;
 
     /**

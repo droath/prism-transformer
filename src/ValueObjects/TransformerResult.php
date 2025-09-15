@@ -9,10 +9,40 @@ use Illuminate\Contracts\Support\Jsonable;
 use JsonSerializable;
 
 /**
- * Represents the result of a transformation operation.
+ * Immutable value object representing the result of a transformation operation.
  *
- * This class encapsulates the status, data, metadata, and any errors
- * from a transformation operation performed by a transformer.
+ * This class encapsulates all information about a transformation operation,
+ * including the status, transformed data, metadata about the transformation
+ * process, and any errors that occurred. It provides a consistent interface
+ * for handling transformation results across the entire package.
+ *
+ * The class is readonly (immutable) to ensure thread safety and prevent
+ * accidental modification after creation. It implements Laravel's Arrayable
+ * and Jsonable interfaces for easy serialization.
+ *
+ * @example Handling successful results:
+ * ```php
+ * $result = TransformerResult::successful("Transformed content");
+ *
+ * if ($result->isSuccessful()) {
+ *     echo $result->getContent();
+ *     $metadata = $result->getMetadata();
+ * }
+ * ```
+ * @example Handling failed results:
+ * ```php
+ * $result = TransformerResult::failed(["API rate limit exceeded"]);
+ *
+ * if ($result->isFailed()) {
+ *     foreach ($result->getErrors() as $error) {
+ *         Log::error("Transformation error: $error");
+ *     }
+ * }
+ * ```
+ *
+ * @immutable
+ *
+ * @api
  */
 readonly class TransformerResult implements Arrayable, Jsonable, JsonSerializable
 {
@@ -124,15 +154,62 @@ readonly class TransformerResult implements Arrayable, Jsonable, JsonSerializabl
     }
 
     /**
-     * @return string[]
+     * Get all errors that occurred during transformation.
+     *
+     * @return string[] Array of error messages, empty if no errors occurred
      */
-    public function errors(): array
+    public function getErrors(): array
     {
         return $this->errors;
     }
 
     /**
+     * Get the first error message, if any.
+     *
+     * @return string|null The first error message, or null if no errors
+     */
+    public function getError(): ?string
+    {
+        return $this->errors[0] ?? null;
+    }
+
+    /**
+     * Get the transformed content.
+     *
+     * @return string|null The transformed content, or null if transformation failed
+     */
+    public function getContent(): ?string
+    {
+        return $this->data;
+    }
+
+    /**
+     * Get the transformation metadata.
+     *
+     * @return TransformerMetadata|null Metadata about the transformation process
+     */
+    public function getMetadata(): ?TransformerMetadata
+    {
+        return $this->metadata;
+    }
+
+    /**
+     * Get the transformation status.
+     *
+     * @return string One of the STATUS_* constants
+     */
+    public function getStatus(): string
+    {
+        return $this->status;
+    }
+
+    /**
      * Check if the transformation was successful.
+     *
+     * A transformation is considered successful if it has completed status
+     * and no errors occurred during the process.
+     *
+     * @return bool True if transformation succeeded, false otherwise
      */
     public function isSuccessful(): bool
     {
@@ -141,10 +218,58 @@ readonly class TransformerResult implements Arrayable, Jsonable, JsonSerializabl
 
     /**
      * Check if the transformation failed.
+     *
+     * A transformation is considered failed if it has failed status
+     * or if any errors occurred during the process.
+     *
+     * @return bool True if transformation failed, false otherwise
      */
     public function isFailed(): bool
     {
         return $this->status === self::STATUS_FAILED || ! empty($this->errors);
+    }
+
+    /**
+     * Check if the transformation is still pending.
+     *
+     * @return bool True if transformation is pending, false otherwise
+     */
+    public function isPending(): bool
+    {
+        return $this->status === self::STATUS_PENDING;
+    }
+
+    /**
+     * Check if the transformation is currently in progress.
+     *
+     * @return bool True if transformation is in progress, false otherwise
+     */
+    public function isInProgress(): bool
+    {
+        return $this->status === self::STATUS_IN_PROGRESS;
+    }
+
+    /**
+     * Legacy alias for getContent().
+     *
+     *
+     * @deprecated Use getContent() instead
+     */
+    public function getTransformedContent(): ?string
+    {
+        return $this->getContent();
+    }
+
+    /**
+     * Legacy alias for getErrors().
+     *
+     * @return string[]
+     *
+     * @deprecated Use getErrors() instead
+     */
+    public function errors(): array
+    {
+        return $this->getErrors();
     }
 
     /**

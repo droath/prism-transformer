@@ -17,15 +17,55 @@ use Droath\PrismTransformer\ValueObjects\TransformerMetadata;
 use Droath\PrismTransformer\Contracts\TransformerInterface;
 
 /**
- * Foundation abstract class providing a core LLM transformation.
+ * Foundation abstract class providing core LLM transformation functionality.
  *
- * This class implements the template method pattern for AI-powered
- * transformations using Prism PHP integration. Concrete transformers
- * should extend this class and implement the abstract methods to
- * define their specific transformation behavior.
+ * This class implements the template method pattern for AI-powered transformations
+ * using Prism PHP integration. It provides comprehensive functionality including:
+ *
+ * - Intelligent two-layer caching (content fetching + transformation results)
+ * - Configuration-driven provider and model selection
+ * - Pre/post transformation hooks for extensibility
+ * - Error handling with detailed context
+ * - Performance optimization and resource management
+ *
+ * Concrete transformers should extend this class and implement the abstract methods
+ * to define their specific transformation behavior. The class handles all the
+ * infrastructure concerns, allowing implementations to focus on the transformation logic.
+ *
+ * @example Basic transformer implementation:
+ * ```php
+ * class ArticleSummarizer extends BaseTransformer
+ * {
+ *     public function prompt(): string
+ *     {
+ *         return 'Summarize the following article in 2-3 sentences:';
+ *     }
+ *
+ *     protected function performTransformation(string $content): TransformerResult
+ *     {
+ *         $prism = Prism::text()
+ *             ->using($this->provider()->value, $this->model())
+ *             ->withPrompt($this->prompt());
+ *
+ *         $response = $prism->generate($content);
+ *         return TransformerResult::successful($response);
+ *     }
+ * }
+ * ```
+ *
+ * @api
  */
 abstract class BaseTransformer implements TransformerInterface
 {
+    /**
+     * Create a new BaseTransformer instance.
+     *
+     * @param CacheManager $cache Laravel's cache manager for handling
+     *                            both content and transformation caching
+     * @param ConfigurationService $configuration Service providing access to
+     *                                           package configuration including
+     *                                           provider settings and defaults
+     */
     public function __construct(
         protected CacheManager $cache,
         protected ConfigurationService $configuration
