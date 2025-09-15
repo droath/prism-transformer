@@ -24,6 +24,12 @@ _ide_helper_models.php
 /.fleet
 /.vscode
 
+# AI
+.claude
+.agent-os
+CLAUDE.md
+.aiassistant/
+
 # Misc
 phpunit.xml
 phpstan.neon

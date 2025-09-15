@@ -5,6 +5,7 @@ namespace Droath\PrismTransformer;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Droath\PrismTransformer\Commands\PrismTransformerCommand;
+use Droath\PrismTransformer\Services\ConfigurationService;
 
 class PrismTransformerServiceProvider extends PackageServiceProvider
 {
@@ -21,5 +22,13 @@ class PrismTransformerServiceProvider extends PackageServiceProvider
             ->hasViews()
             ->hasMigration('create_prism_transformer_table')
             ->hasCommand(PrismTransformerCommand::class);
+    }
+
+    public function packageRegistered(): void
+    {
+        // Bind the configuration service as a singleton
+        $this->app->singleton(ConfigurationService::class, function ($app) {
+            return new ConfigurationService();
+        });
     }
 }
