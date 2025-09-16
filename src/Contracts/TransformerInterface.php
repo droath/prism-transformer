@@ -4,69 +4,81 @@ declare(strict_types=1);
 
 namespace Droath\PrismTransformer\Contracts;
 
-use Prism\Prism\Schema\ObjectSchema;
-use Illuminate\Database\Eloquent\Model;
-use Droath\PrismTransformer\Enums\Provider;
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
 
 /**
  * Primary interface defining the core transformation contract.
  *
- * This interface provides a standardized way to transform data from one format
- * to another using AI-powered transformations with type safety.
+ * This interface provides a standardized way to transform content using
+ * AI-powered transformations with comprehensive type safety, caching support,
+ * and error handling. Implementations should extend BaseTransformer for
+ * optimal functionality.
+ *
+ * @api
+ *
+ * @see \Droath\PrismTransformer\Abstract\BaseTransformer
  */
 interface TransformerInterface
 {
     /**
-     * Get the unique name identifier for this transformer.
+     * Get the transformation prompt that instructs the LLM.
      *
-     * @return string The transformer name
-     */
-    public function getName(): string;
-
-    /**
-     * Get the transformation prompt.
+     * This method should return the prompt that will be sent to the LLM
+     * to instruct it on how to transform the input content. The prompt
+     * should be specific, clear, and include any necessary context or
+     * formatting instructions.
      *
-     * This should return the prompt that will be sent to the LLM
-     * to instruct it on how to transform the input content.
+     * @return string The transformation prompt for the LLM
+     *
+     * @example
+     * ```php
+     * public function prompt(): string
+     * {
+     *     return 'Summarize the following article in 2-3 sentences, '
+     *          . 'focusing on the main points and key takeaways:';
+     * }
+     * ```
      */
     public function prompt(): string;
 
     /**
-     * Get the AI provider to use it for transformation.
+     * Execute the complete transformation pipeline.
      *
-     * This should return a Provider enum value (OpenAI, Anthropic, etc.)
-     * that determines which LLM service to use.
-     */
-    public function provider(): Provider;
-
-    /**
-     * Get the specific model to use for transformation.
+     * This method orchestrates the entire transformation process including:
+     * 1. Cache lookup (if enabled)
+     * 2. Pre-transformation hooks
+     * 3. LLM transformation via Prism PHP
+     * 4. Result processing and validation
+     * 5. Cache storage
+     * 6. Post-transformation hooks
      *
-     * This should return the model name/ID for the selected provider
-     * (e.g., 'gpt-4o-mini', 'claude-3-sonnet', etc.).
-     */
-    public function model(): string;
-
-    /**
-     * Handles the transformation pipeline.
+     * @param string $content The raw content to transform
      *
-     * This method orchestrates the complete transformation flow:
-     * 1. Pre-transformation hooks
-     * 2. Prism PHP LLM transformation
-     * 3. Post-transformation processing
+     * @return TransformerResult The transformation result containing:
+     *                          - Transformed content
+     *                          - Success/failure status
+     *                          - Error messages (if any)
+     *                          - Transformation metadata
      *
-     * @param string $content The content to transform.
+     * @throws \Droath\PrismTransformer\Exceptions\TransformerException
+     *         When transformation fails due to LLM errors
+     * @throws \Droath\PrismTransformer\Exceptions\ValidationException
+     *         When input content fails validation
+     * @throws \Droath\PrismTransformer\Exceptions\InvalidInputException
+     *         When input content is malformed or empty
+     *
+     * @example
+     * ```php
+     * $content = "Long article text here...";
+     * $result = $transformer->execute($content);
+     *
+     * if ($result->isSuccessful()) {
+     *     echo $result->getContent();
+     *     $metadata = $result->getMetadata();
+     * } else {
+     *     Log::error("Transformation failed: " . $result->getError());
+     * }
+     * ```
      */
     public function execute(string $content): TransformerResult;
-
-    /**
-     * Get the output format specification.
-     *
-     * This should return a Laravel model class name that defines
-     * the expected structure of the transformation output.
-     *
-     * @param ObjectSchema|Model $format The output format specification
-     */
-    public function outputFormat(ObjectSchema|Model $format): ?ObjectSchema;
 }

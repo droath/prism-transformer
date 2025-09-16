@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Droath\PrismTransformer\Abstract;
 
 use Prism\Prism\Prism;
+use Prism\Prism\Text\Response as TextResponse;
+use Prism\Prism\Structured\Response as StructuredResponse;
 use Prism\Prism\Schema\ObjectSchema;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
@@ -17,51 +19,62 @@ use Droath\PrismTransformer\ValueObjects\TransformerMetadata;
 use Droath\PrismTransformer\Contracts\TransformerInterface;
 
 /**
- * Foundation abstract class providing a core LLM transformation.
+ * Foundation abstract class providing core LLM transformation functionality.
  *
  * This class implements the template method pattern for AI-powered
- * transformations using Prism PHP integration. Concrete transformers
- * should extend this class and implement the abstract methods to
- * define their specific transformation behavior.
+ * transformations using Prism PHP integration. It provides comprehensive
+ * functionality including:
+ *
+ * - Intelligent two-layer caching (content fetching + transformation results)
+ * - Configuration-driven provider and model selection
+ * - Pre/post transformation hooks for extensibility
+ * - Error handling with detailed context
+ * - Performance optimization and resource management
+ *
+ * Concrete transformers should extend this class and implement the abstract
+ * methods to define their specific transformation behavior. The class handles
+ * all the infrastructure concerns, allowing implementations to focus on the
+ * transformation logic.
+ *
+ * @example Basic transformer implementation:
+ * ```php
+ * class ArticleSummarizer extends BaseTransformer
+ * {
+ *     public function prompt(): string
+ *     {
+ *         return 'Summarize the following article in 2-3 sentences:';
+ *     }
+ *
+ *     protected function performTransformation(string $content):
+ *     TransformerResult
+ *     {
+ *         $prism = Prism::text()
+ *             ->using($this->provider()->value, $this->model())
+ *             ->withPrompt($this->prompt());
+ *
+ *         $response = $prism->generate($content);
+ *         return TransformerResult::successful($response);
+ *     }
+ * }
+ * ```
+ *
+ * @api
  */
 abstract class BaseTransformer implements TransformerInterface
 {
+    /**
+     * Create a new BaseTransformer instance.
+     *
+     * @param CacheManager $cache Laravel's cache manager for handling
+     *                            both content and transformation caching
+     * @param ConfigurationService $configuration Service providing access to
+     *                                           package configuration including
+     *                                           provider settings and defaults
+     */
     public function __construct(
         protected CacheManager $cache,
         protected ConfigurationService $configuration
     ) {}
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getName(): string
-    {
-        return static::class;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function provider(): Provider
-    {
-        return $this->configuration->getDefaultProvider();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function model(): string
-    {
-        return $this->provider()->defaultModel();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function outputFormat(ObjectSchema|Model $format): ?ObjectSchema
-    {
-        return null;
-    }
 
     /**
      * {@inheritDoc}
@@ -82,6 +95,152 @@ abstract class BaseTransformer implements TransformerInterface
     }
 
     /**
+     * Get the unique name identifier for this transformer.
+     *
+     * Used for caching, logging, and debugging purposes. Returns
+     * the fully-qualified class name as a unique identifier.
+     *
+     * @return string The transformer's unique identifier
+     */
+    protected function getName(): string
+    {
+        return static::class;
+    }
+
+    /**
+     * Get the AI provider to use for this transformation.
+     *
+     * Returns the default provider from configuration. Can be overridden
+     * by concrete transformers for provider-specific optimizations.
+     *
+     * @return Provider The AI provider enum
+     */
+    protected function provider(): Provider
+    {
+        return $this->configuration->getDefaultProvider();
+    }
+
+    /**
+     * Get the specific model to use for transformation.
+     *
+     * Returns the default model for the selected provider. Can be overridden
+     * by concrete transformers for model-specific optimizations.
+     *
+     * @return string The model identifier for the selected provider
+     */
+    protected function model(): string
+    {
+        return $this->provider()->defaultModel();
+    }
+
+    /**
+     * Define the expected output format for structured transformations.
+     *
+     * This method allows transformers to specify a structured schema for
+     * their output. Return null for unstructured text output, or provide
+     * an ObjectSchema for structured data output.
+     *
+     * @return \Prism\Prism\Schema\ObjectSchema|\Illuminate\Database\Eloquent\Model|null
+     *   The output schema definition, or null for text output
+     */
+    protected function outputFormat(): null|ObjectSchema|Model
+    {
+        return null;
+    }
+
+    /**
+     * Define the tools available to the LLM for function calling.
+     *
+     * Override this method in concrete transformers to provide tools that the
+     * LLM can use during the transformation process. Tools enable the model to
+     * call functions and receive structured responses, expanding its
+     * capabilities beyond simple text generation.
+     *
+     * Each tool should be defined as an array with the following structure:
+     * - name: The function name (required)
+     * - description: Human-readable description of what the tool does
+     * (required)
+     * - parameters: JSON schema defining the expected parameters (optional)
+     *
+     * @return array An array of tool definitions for function calling
+     *
+     * @example Basic tool definition:
+     * ```php
+     * protected function tools(): array
+     * {
+     *     return [
+     *         [
+     *             'name' => 'get_weather',
+     *             'description' => 'Get current weather information for a
+     *     location',
+     *             'parameters' => [
+     *                 'type' => 'object',
+     *                 'properties' => [
+     *                     'location' => [
+     *                         'type' => 'string',
+     *                         'description' => 'The city name'
+     *                     ]
+     *                 ],
+     *                 'required' => ['location']
+     *             ]
+     *         ]
+     *     ];
+     * }
+     * ```
+     */
+    protected function tools(): array
+    {
+        return [];
+    }
+
+    /**
+     * Define the temperature setting for controlling LLM response randomness.
+     *
+     * Override this method in concrete transformers to set a specific
+     * temperature value that controls the randomness and creativity of the
+     * model's responses. Temperature affects how the model selects tokens
+     * during generation, with lower values producing more focused and
+     * deterministic outputs, while higher values encourage more creative and
+     * varied responses.
+     *
+     * Returning null will use the provider's default temperature setting,
+     * allowing for provider-specific optimizations and configurations.
+     *
+     * @return float|null The temperature value (typically 0.0-2.0) or null for
+     *     provider default
+     */
+    protected function temperature(): ?float
+    {
+        return null;
+    }
+
+    /**
+     * Define the topP setting for nucleus sampling in LLM responses.
+     *
+     * Override this method in concrete transformers to set a specific topP
+     * value that controls nucleus sampling during token generation. TopP (also
+     * known as nucleus sampling) considers only the tokens whose cumulative
+     * probability mass is within the specified threshold, filtering out
+     * unlikely tokens to improve response quality.
+     *
+     * Lower values (e.g., 0.1) result in more focused and deterministic
+     * outputs
+     * by considering only the most likely tokens, while higher values (e.g.,
+     * 0.9) allow for more diverse and creative responses by including a
+     * broader range of possible tokens.
+     *
+     * Returning null will use the provider's default topP setting, if
+     * available.
+     *
+     * @return float|null The topP value (typically 0.0-1.0) or null for
+     *     provider default
+     */
+    protected function topP(): ?float
+    {
+        return null;
+    }
+
+    /**
      * Prism PHP integration for LLM transformation.
      *
      * This method uses Prism::structured() to perform the actual
@@ -96,24 +255,7 @@ abstract class BaseTransformer implements TransformerInterface
     protected function performTransformation(string $content): TransformerResult
     {
         try {
-            $provider = $this->provider()->toPrism();
-
-            if ($provider === null) {
-                throw new \InvalidArgumentException(
-                    'Invalid provider'
-                );
-            }
-
-            $structuredBuilder = Prism::structured()
-                ->using($provider, $this->model())
-                ->withPrompt($this->prompt());
-
-            // Note: Schema mapping will be implemented in Phase 2
-            // if ($this->outputFormat() !== null) {
-            //     $structuredBuilder = $structuredBuilder->withSchema($this->outputFormat());
-            // }
-
-            $response = $structuredBuilder->asStructured();
+            $response = $this->makeRequest();
 
             return TransformerResult::successful(
                 $response->text,
@@ -133,6 +275,79 @@ abstract class BaseTransformer implements TransformerInterface
                 )
             );
         }
+    }
+
+    /**
+     * Make the request to the LLM provider.
+     */
+    protected function makeRequest(): TextResponse|StructuredResponse
+    {
+        $provider = $this->provider()->toPrism();
+
+        if ($provider === null) {
+            throw new \InvalidArgumentException(
+                'Invalid provider'
+            );
+        }
+        $outputFormat = $this->outputFormat();
+
+        $resource = $outputFormat !== null
+            ? Prism::structured()
+            : Prism::text();
+
+        $resource
+            ->using($provider, $this->model())
+            ->withPrompt($this->prompt());
+
+        if ($topP = $this->topP()) {
+            $resource->usingTopP($topP);
+        }
+
+        if ($temperature = $this->resolveTemperature()) {
+            $resource->usingTemperature($temperature);
+        }
+
+        if ($outputFormat = $this->resolveOutputFormat()) {
+            $resource->withSchema(
+                $outputFormat
+            );
+        }
+
+        return $outputFormat !== null
+            ? $resource->asStructured()
+            : $resource->asText();
+    }
+
+    /**
+     * Resolve the transformer temperature value.
+     */
+    protected function resolveTemperature(): ?float
+    {
+        return $this->temperature()
+            ?? $this->provider()->getConfigValue('temperature');
+    }
+
+    /**
+     * Resolve the transformer output format.
+     */
+    protected function resolveOutputFormat(): ?ObjectSchema
+    {
+        $outputFormat = $this->outputFormat();
+
+        if ($outputFormat === null) {
+            return null;
+        }
+
+        if ($outputFormat instanceof ObjectSchema) {
+            return $outputFormat;
+        }
+
+        return $this->convertModelToObjectSchema($outputFormat);
+    }
+
+    protected function convertModelToObjectSchema(Model $model): ?ObjectSchema
+    {
+        return null;
     }
 
     /**
@@ -161,6 +376,9 @@ abstract class BaseTransformer implements TransformerInterface
             $this->prompt(),
             $this->provider()->value,
             $this->model(),
+            $this->tools(),
+            $this->temperature(),
+            $this->topP(),
         ])));
     }
 

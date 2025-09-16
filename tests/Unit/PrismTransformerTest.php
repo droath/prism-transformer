@@ -3,11 +3,9 @@
 declare(strict_types=1);
 
 use Droath\PrismTransformer\PrismTransformer;
-use Droath\PrismTransformer\Contracts\TransformerInterface;
 use Droath\PrismTransformer\Contracts\PrismTransformerInterface;
 use Droath\PrismTransformer\Contracts\ContentFetcherInterface;
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
-use Droath\PrismTransformer\Handlers\UrlTransformerHandler;
 
 use function Pest\Laravel\mock;
 
@@ -204,16 +202,16 @@ describe('PrismTransformer', function () {
             expect($handlerProperty->getValue($this->transformer))->toBe($closure);
         });
 
-        test('accepts TransformerInterface instance', function () {
-            $transformerMock = mock(TransformerInterface::class);
+        test('accepts string transformer class name', function () {
+            $className = 'TestTransformerClass';
 
-            $this->transformer->using($transformerMock);
+            $this->transformer->using($className);
 
             $reflection = new ReflectionClass($this->transformer);
             $handlerProperty = $reflection->getProperty('transformerHandler');
             $handlerProperty->setAccessible(true);
 
-            expect($handlerProperty->getValue($this->transformer))->toBe($transformerMock);
+            expect($handlerProperty->getValue($this->transformer))->toBe($className);
         });
 
         test('overwrites existing transformer handler', function () {
@@ -232,9 +230,9 @@ describe('PrismTransformer', function () {
     });
 
     describe('transform method', function () {
-        test('returns null when no transformer handler is set', function () {
-            $result = $this->transformer->transform();
-            expect($result)->toBeNull();
+        test('throws exception when no transformer handler is set', function () {
+            expect(fn () => $this->transformer->transform())
+                ->toThrow(\InvalidArgumentException::class, 'Invalid transformer handler provided.');
         });
 
         test('executes closure transformer with content', function () {
@@ -253,19 +251,17 @@ describe('PrismTransformer', function () {
             expect($result)->toBe($expectedResult);
         });
 
-        test('executes TransformerInterface with content', function () {
+        test('executes string transformer class with content', function () {
             $content = 'test content';
-            $expectedResult = TransformerResult::successful('interface transformed: '.$content);
+            $expectedResult = TransformerResult::successful('string transformed: '.$content);
 
-            $transformerMock = mock(TransformerInterface::class);
-            $transformerMock->shouldReceive('execute')
-                ->once()
-                ->with($content)
-                ->andReturn($expectedResult);
+            $closure = fn ($input) => $input === $content
+                ? $expectedResult
+                : TransformerResult::failed(['Unexpected content']);
 
             $result = $this->transformer
                 ->text($content)
-                ->using($transformerMock)
+                ->using($closure)
                 ->transform();
 
             expect($result)->toBe($expectedResult);
@@ -296,19 +292,17 @@ describe('PrismTransformer', function () {
             expect($result)->toBeNull();
         });
 
-        test('handles TransformerInterface that returns valid result', function () {
+        test('handles closure that returns valid result', function () {
             $content = 'test content';
-            $expectedResult = TransformerResult::successful('interface result');
+            $expectedResult = TransformerResult::successful('closure result');
 
-            $transformerMock = mock(TransformerInterface::class);
-            $transformerMock->shouldReceive('execute')
-                ->once()
-                ->with($content)
-                ->andReturn($expectedResult);
+            $closure = fn ($input) => $input === $content
+                ? $expectedResult
+                : TransformerResult::failed(['Unexpected content']);
 
             $result = $this->transformer
                 ->text($content)
-                ->using($transformerMock)
+                ->using($closure)
                 ->transform();
 
             expect($result)->toBe($expectedResult);
@@ -393,16 +387,11 @@ describe('PrismTransformer', function () {
                 ->toThrow(\Exception::class, 'Transformer error');
         });
 
-        test('handles TransformerInterface that throws exception', function () {
-            $transformerMock = mock(TransformerInterface::class);
-            $transformerMock->shouldReceive('execute')
-                ->once()
-                ->andThrow(new \Exception('Interface transformer error'));
-
-            $this->transformer->text('content')->using($transformerMock);
+        test('handles string transformer that throws exception', function () {
+            $this->transformer->text('content')->using('NonExistentTransformerClass');
 
             expect(fn () => $this->transformer->transform())
-                ->toThrow(\Exception::class, 'Interface transformer error');
+                ->toThrow(\InvalidArgumentException::class, 'Invalid transformer handler provided.');
         });
     });
 });

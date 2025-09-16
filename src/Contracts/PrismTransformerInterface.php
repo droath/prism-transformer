@@ -6,19 +6,57 @@ namespace Droath\PrismTransformer\Contracts;
 
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
 
+/**
+ * Interface for the main PrismTransformer class.
+ *
+ * This interface defines the fluent API for setting up and executing
+ * AI-powered content transformations. It supports both text content
+ * and URL-based content fetching with customizable transformers.
+ *
+ * @api
+ */
 interface PrismTransformerInterface
 {
     /**
-     * Define the transform text content.
+     * Set the text content to be transformed.
      *
-     * @return $this
+     * This method accepts raw text content that will be passed to the
+     * configured transformer for processing.
+     *
+     * @param string $content The text content to transform
+     *
+     * @return static Returns self for method chaining
+     *
+     * @example
+     * ```php
+     * $transformer->text('Hello, world!')
+     *     ->using($myTransformer)
+     *     ->transform();
+     * ```
      */
     public function text(string $content): static;
 
     /**
-     * Define the transform URL content.
+     * Set a URL as the content source to be transformed.
      *
-     * @return $this
+     * This method will fetch content from the specified URL using either
+     * the provided content fetcher or the default HTTP fetcher. The fetched
+     * content will then be passed to the configured transformer.
+     *
+     * @param string $url The URL to fetch content from
+     * @param ContentFetcherInterface|null $fetcher Optional custom content fetcher.
+     *                                               If null, uses the default BasicHttpFetcher
+     *
+     * @return static Returns self for method chaining
+     *
+     * @throws \Droath\PrismTransformer\Exceptions\FetchException When URL fetching fails
+     *
+     * @example
+     * ```php
+     * $transformer->url('https://example.com/article')
+     *     ->using($summarizer)
+     *     ->transform();
+     * ```
      */
     public function url(
         string $url,
@@ -26,27 +64,78 @@ interface PrismTransformerInterface
     ): static;
 
     /**
-     * Set the transformer to run asynchronously.
+     * Configure the transformer to run asynchronously.
      *
-     * @return $this
+     * When enabled, the transformation will be queued for background processing
+     * using Laravel's queue system. The transform() method will return immediately
+     * with a queued job reference.
+     *
+     * @return static Returns self for method chaining
+     *
+     * @example
+     * ```php
+     * $transformer->text($content)
+     *     ->async()
+     *     ->using($transformer)
+     *     ->transform(); // Returns immediately, processes in background
+     * ```
      */
     public function async(): static;
 
     /**
-     * Using the transformer closure or transformer instance.
+     * Set the transformer to use for content processing.
      *
-     * @return $this
+     * Accepts either a closure function or a TransformerInterface implementation.
+     * The provided transformer will receive the content and return a TransformerResult.
+     *
+     * @param \Closure|string|TransformerInterface $transformer
+     *   The transformer to use.
+     *     - Closure: function (string $content): TransformerResult
+     *     - string: Custom transformer classname
+     *     - TransformerInterface: Direct transformer instance
+     *
+     * @return static Returns self for method chaining
+     *
+     * @example Using a closure:
+     * ```php
+     * $transformer->using(function($content) {
+     *     return TransformerResult::successful("Processed: $content");
+     * });
+     * ```
+     * @example Using a transformer class:
+     * ```php
+     * $transformer->using(app(ArticleSummarizer::class));
+     * ```
      */
     public function using(
-        \Closure|TransformerInterface $transformer
+        \Closure|string|TransformerInterface $transformer
     ): static;
 
     /**
-     * Transforms the input data using the transformer's logic'.
+     * Execute the transformation with the configured settings.
      *
-     * @return TransformerResult|null
-     *   The result of the transformation, or null if the transformation
-     *   fails or no result is available.
+     * This method triggers the actual transformation process using the content
+     * and transformer that have been configured via method chaining. It handles
+     * both synchronous and asynchronous execution based on the async() setting.
+     *
+     * @return TransformerResult|null The transformation result containing the
+     *                                processed content, metadata, and success status.
+     *                                Returns null if no transformer is configured
+     *                                or if async mode queues the job.
+     *
+     * @throws \Droath\PrismTransformer\Exceptions\TransformerException When transformation fails
+     * @throws \Droath\PrismTransformer\Exceptions\ValidationException When input validation fails
+     *
+     * @example Synchronous transformation:
+     * ```php
+     * $result = $transformer->text($content)
+     *     ->using($summarizer)
+     *     ->transform();
+     *
+     * if ($result->isSuccessful()) {
+     *     echo $result->getContent();
+     * }
+     * ```
      */
     public function transform(): ?TransformerResult;
 }
