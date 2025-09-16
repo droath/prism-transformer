@@ -3,11 +3,8 @@
 declare(strict_types=1);
 
 use Droath\PrismTransformer\PrismTransformer;
-use Droath\PrismTransformer\Contracts\TransformerInterface;
 use Droath\PrismTransformer\Contracts\ContentFetcherInterface;
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
-use Droath\PrismTransformer\ValueObjects\TransformerMetadata;
-use Droath\PrismTransformer\Enums\Provider;
 
 use function Pest\Laravel\mock;
 
@@ -135,50 +132,15 @@ describe('PrismTransformer Integration', function () {
         });
     });
 
-    describe('TransformerInterface integration', function () {
-        test('works with mock TransformerInterface implementation', function () {
-            $content = 'Interface test content';
-            $transformedResult = TransformerResult::successful(
-                'Transformed by interface',
-                TransformerMetadata::make('gpt-4', Provider::OPENAI, 'test-transformer')
-            );
-
-            $transformerInterface = mock(TransformerInterface::class);
-            $transformerInterface->shouldReceive('execute')
-                ->once()
-                ->with($content)
-                ->andReturn($transformedResult);
-
+    describe('String transformer integration', function () {
+        test('handles invalid string transformer class', function () {
+            $content = 'Test content for string transformer';
             $transformer = new PrismTransformer();
-            $result = $transformer
-                ->text($content)
-                ->using($transformerInterface)
-                ->transform();
 
-            expect($result)->toBe($transformedResult);
-            expect($result->isSuccessful())->toBeTrue();
-            expect($result->data)->toBe('Transformed by interface');
-        });
+            $transformer->text($content)->using('NonExistentTransformerClass');
 
-        test('handles TransformerInterface returning failed result', function () {
-            $content = 'Content that will fail';
-            $failedResult = TransformerResult::failed(['Transformation failed']);
-
-            $transformerInterface = mock(TransformerInterface::class);
-            $transformerInterface->shouldReceive('execute')
-                ->once()
-                ->with($content)
-                ->andReturn($failedResult);
-
-            $transformer = new PrismTransformer();
-            $result = $transformer
-                ->text($content)
-                ->using($transformerInterface)
-                ->transform();
-
-            expect($result)->toBe($failedResult);
-            expect($result->isFailed())->toBeTrue();
-            expect($result->errors())->toContain('Transformation failed');
+            expect(fn () => $transformer->transform())
+                ->toThrow(\InvalidArgumentException::class, 'Invalid transformer handler provided.');
         });
     });
 

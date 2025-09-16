@@ -88,9 +88,11 @@ interface PrismTransformerInterface
      * Accepts either a closure function or a TransformerInterface implementation.
      * The provided transformer will receive the content and return a TransformerResult.
      *
-     * @param \Closure|TransformerInterface $transformer The transformer to use.
-     *                                                   - Closure: function(string $content): TransformerResult
-     *                                                   - TransformerInterface: Custom transformer class
+     * @param \Closure|string|TransformerInterface $transformer
+     *   The transformer to use.
+     *     - Closure: function (string $content): TransformerResult
+     *     - string: Custom transformer classname
+     *     - TransformerInterface: Direct transformer instance
      *
      * @return static Returns self for method chaining
      *
@@ -106,7 +108,7 @@ interface PrismTransformerInterface
      * ```
      */
     public function using(
-        \Closure|TransformerInterface $transformer
+        \Closure|string|TransformerInterface $transformer
     ): static;
 
     /**

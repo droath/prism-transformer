@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Droath\PrismTransformer\Testing;
 
 use Droath\PrismTransformer\PrismTransformer;
-use Droath\PrismTransformer\Contracts\TransformerInterface;
 use Droath\PrismTransformer\Contracts\ContentFetcherInterface;
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
 use Droath\PrismTransformer\ValueObjects\TransformerMetadata;
@@ -90,48 +89,14 @@ trait TransformerTestingHelpers
      * @param string $transformedContent The content to return
      * @param TransformerMetadata|null $metadata Optional metadata
      *
-     * @return TransformerInterface Mock transformer instance
+     * @return \Closure Mock transformer closure
      */
     protected function createMockTransformer(
         string $transformedContent = 'Mocked transformation result',
         ?TransformerMetadata $metadata = null
-    ): TransformerInterface {
-        return new class($transformedContent, $metadata) implements TransformerInterface
-        {
-            public function __construct(
-                private string $content,
-                private ?TransformerMetadata $metadata = null
-            ) {}
-
-            public function getName(): string
-            {
-                return 'MockTransformer';
-            }
-
-            public function prompt(): string
-            {
-                return 'Mock prompt for testing';
-            }
-
-            public function provider(): \Droath\PrismTransformer\Enums\Provider
-            {
-                return \Droath\PrismTransformer\Enums\Provider::OPENAI;
-            }
-
-            public function model(): string
-            {
-                return 'gpt-4o-mini';
-            }
-
-            public function execute(string $content): TransformerResult
-            {
-                return TransformerResult::successful($this->content, $this->metadata);
-            }
-
-            public function outputFormat(\Prism\Prism\Schema\ObjectSchema|\Illuminate\Database\Eloquent\Model $format): ?\Prism\Prism\Schema\ObjectSchema
-            {
-                return null;
-            }
+    ): \Closure {
+        return function (string $content) use ($transformedContent, $metadata): TransformerResult {
+            return TransformerResult::successful($transformedContent, $metadata);
         };
     }
 
@@ -141,48 +106,14 @@ trait TransformerTestingHelpers
      * @param array<string> $errors Array of error messages
      * @param TransformerMetadata|null $metadata Optional metadata
      *
-     * @return TransformerInterface Mock transformer that fails
+     * @return \Closure Mock transformer closure that fails
      */
     protected function createFailingTransformer(
         array $errors = ['Mock transformation failed'],
         ?TransformerMetadata $metadata = null
-    ): TransformerInterface {
-        return new class($errors, $metadata) implements TransformerInterface
-        {
-            public function __construct(
-                private array $errors,
-                private ?TransformerMetadata $metadata = null
-            ) {}
-
-            public function getName(): string
-            {
-                return 'FailingMockTransformer';
-            }
-
-            public function prompt(): string
-            {
-                return 'Mock prompt that will fail';
-            }
-
-            public function provider(): \Droath\PrismTransformer\Enums\Provider
-            {
-                return \Droath\PrismTransformer\Enums\Provider::OPENAI;
-            }
-
-            public function model(): string
-            {
-                return 'gpt-4o-mini';
-            }
-
-            public function execute(string $content): TransformerResult
-            {
-                return TransformerResult::failed($this->errors, $this->metadata);
-            }
-
-            public function outputFormat(\Prism\Prism\Schema\ObjectSchema|\Illuminate\Database\Eloquent\Model $format): ?\Prism\Prism\Schema\ObjectSchema
-            {
-                return null;
-            }
+    ): \Closure {
+        return function (string $content) use ($errors, $metadata): TransformerResult {
+            return TransformerResult::failed($errors, $metadata);
         };
     }
 

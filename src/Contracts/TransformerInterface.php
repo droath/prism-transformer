@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace Droath\PrismTransformer\Contracts;
 
-use Prism\Prism\Schema\ObjectSchema;
-use Illuminate\Database\Eloquent\Model;
-use Droath\PrismTransformer\Enums\Provider;
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
 
 /**
@@ -23,26 +20,6 @@ use Droath\PrismTransformer\ValueObjects\TransformerResult;
  */
 interface TransformerInterface
 {
-    /**
-     * Get the unique name identifier for this transformer.
-     *
-     * Used for caching, logging, and debugging purposes. Should return
-     * a unique string that identifies this specific transformer instance.
-     * By default, this is typically the fully-qualified class name.
-     *
-     * @return string The transformer's unique identifier
-     *
-     * @example
-     * ```php
-     * // Typical implementation in BaseTransformer
-     * public function getName(): string
-     * {
-     *     return static::class; // e.g., "App\Transformers\ArticleSummarizer"
-     * }
-     * ```
-     */
-    public function getName(): string;
-
     /**
      * Get the transformation prompt that instructs the LLM.
      *
@@ -63,53 +40,6 @@ interface TransformerInterface
      * ```
      */
     public function prompt(): string;
-
-    /**
-     * Get the AI provider to use for this transformation.
-     *
-     * Returns the Provider enum value that determines which LLM service
-     * to use for this transformation. Different providers excel at different
-     * types of tasks, so this allows per-transformer optimization.
-     *
-     * @return Provider The AI provider enum (OPENAI, ANTHROPIC, GROQ, etc.)
-     *
-     * @see \Droath\PrismTransformer\Enums\Provider
-     *
-     * @example
-     * ```php
-     * public function provider(): Provider
-     * {
-     *     // Use Anthropic for analysis tasks, OpenAI for generation
-     *     return Provider::ANTHROPIC;
-     * }
-     * ```
-     */
-    public function provider(): Provider;
-
-    /**
-     * Get the specific model to use for transformation.
-     *
-     * Returns the model name/ID for the selected provider. This should
-     * correspond to available models for the chosen provider. Model
-     * selection affects performance, cost, and output quality.
-     *
-     * @return string The model identifier for the selected provider
-     *
-     * @example OpenAI models:
-     * - 'gpt-4o-mini' (fast, cost-effective)
-     * - 'gpt-4o' (high quality, slower)
-     * @example Anthropic models:
-     * - 'claude-3-5-haiku-20241022' (fast)
-     * - 'claude-3-5-sonnet-20241022' (balanced)
-     * @example
-     * ```php
-     * public function model(): string
-     * {
-     *     return 'gpt-4o-mini'; // Fast and cost-effective for summaries
-     * }
-     * ```
-     */
-    public function model(): string;
 
     /**
      * Execute the complete transformation pipeline.
@@ -151,41 +81,4 @@ interface TransformerInterface
      * ```
      */
     public function execute(string $content): TransformerResult;
-
-    /**
-     * Define the expected output format for structured transformations.
-     *
-     * This method allows transformers to specify a structured schema for
-     * their output, enabling type-safe transformations with validation.
-     * Return null for unstructured text output, or provide an ObjectSchema
-     * for structured data output.
-     *
-     * @param ObjectSchema|Model $format Optional format specification
-     *                                   to override the default
-     *
-     * @return ObjectSchema|null The output schema definition, or null for
-     *                          unstructured text output
-     *
-     * @see \Prism\Prism\Schema\ObjectSchema
-     * @see \Prism\Prism\Schema\StringSchema
-     * @see \Prism\Prism\Schema\ArraySchema
-     *
-     * @example For structured contact extraction:
-     * ```php
-     * public function outputFormat(ObjectSchema|Model $format): ?ObjectSchema
-     * {
-     *     return ObjectSchema::create()
-     *         ->properties([
-     *             'name' => StringSchema::create()
-     *                 ->description('Full contact name'),
-     *             'email' => StringSchema::create()
-     *                 ->format('email')
-     *                 ->description('Email address'),
-     *             'phone' => StringSchema::create()
-     *                 ->description('Phone number'),
-     *         ])
-     *         ->required(['name']);
-     * }
-     */
-    public function outputFormat(ObjectSchema|Model $format): ?ObjectSchema;
 }

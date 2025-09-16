@@ -9,12 +9,14 @@ use Droath\PrismTransformer\ValueObjects\TransformerResult;
 use Droath\PrismTransformer\Contracts\ContentFetcherInterface;
 
 /**
- * Main PrismTransformer class providing fluent interface for AI-powered content transformation.
+ * Main PrismTransformer class providing fluent interface for AI-powered
+ * content transformation.
  *
- * This class serves as the primary entry point for the PrismTransformer package,
- * offering a fluent interface for setting up and executing AI-powered content
- * transformations. It supports both text content and URL-based content fetching
- * with customizable transformers and asynchronous processing capabilities.
+ * This class serves as the primary entry point for the PrismTransformer
+ * package, offering a fluent interface for setting up and executing AI-powered
+ * content transformations. It supports both text content and URL-based content
+ * fetching with customizable transformers and asynchronous processing
+ * capabilities.
  *
  * The class follows the Builder pattern, allowing method chaining for an
  * intuitive API:
@@ -69,11 +71,12 @@ class PrismTransformer implements PrismTransformerInterface
      * The transformer handler to use for content processing.
      *
      * Can be either:
-     * - A Closure that accepts string content and returns TransformerResult
-     * - A TransformerInterface implementation for more complex transformations
-     * - null if no transformer has been configured yet
+     *   - A Closure that accepts string content and returns TransformerResult
+     *   - A transform classname that resolves to TransformerInterface
+     *   - A TransformerInterface instance
+     *   - null if no transformer has been configured yet
      */
-    protected null|\Closure|TransformerInterface $transformerHandler = null;
+    protected null|\Closure|string|TransformerInterface $transformerHandler = null;
 
     /**
      * {@inheritDoc}
@@ -111,7 +114,7 @@ class PrismTransformer implements PrismTransformerInterface
      * {@inheritDoc}
      */
     public function using(
-        \Closure|TransformerInterface $transformerHandler
+        \Closure|string|TransformerInterface $transformerHandler
     ): static {
         $this->transformerHandler = $transformerHandler;
 
@@ -131,7 +134,13 @@ class PrismTransformer implements PrismTransformerInterface
      */
     protected function handlerTransformer(): ?TransformerResult
     {
-        $handler = $this->transformerHandler;
+        $handler = $this->resolveHandler();
+
+        if ($handler === null) {
+            throw new \InvalidArgumentException(
+                'Invalid transformer handler provided.'
+            );
+        }
 
         if ($handler instanceof TransformerInterface) {
             return $handler->execute(
@@ -141,6 +150,25 @@ class PrismTransformer implements PrismTransformerInterface
 
         if (is_callable($handler)) {
             return $handler($this->content);
+        }
+
+        return null;
+    }
+
+    /**
+     * Resolve the transformer handler.
+     */
+    protected function resolveHandler(): \Closure|TransformerInterface|null
+    {
+        if (
+            $this->transformerHandler instanceof \Closure
+        || $this->transformerHandler instanceof TransformerInterface
+        ) {
+            return $this->transformerHandler;
+        }
+
+        if (is_string($this->transformerHandler) && class_exists($this->transformerHandler)) {
+            return resolve($this->transformerHandler);
         }
 
         return null;
