@@ -14,7 +14,7 @@ use Illuminate\Cache\CacheManager;
 describe('BaseTransformer Cache Integration', function () {
     beforeEach(function () {
         // Create a testable transformer that doesn't make real API calls
-        $this->transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+        $this->transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
         {
             public int $transformationCount = 0;
 
@@ -137,7 +137,7 @@ describe('BaseTransformer Cache Integration', function () {
 
     describe('cache isolation behavior', function () {
         test('different transformers maintain separate caches', function () {
-            $transformer1 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformer1 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public int $transformationCount = 0;
 
@@ -154,7 +154,7 @@ describe('BaseTransformer Cache Integration', function () {
                 }
             };
 
-            $transformer2 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformer2 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public int $transformationCount = 0;
 
@@ -193,7 +193,7 @@ describe('BaseTransformer Cache Integration', function () {
         test('different providers maintain separate caches', function () {
             Config::set('prism-transformer.default_provider', Provider::OPENAI);
 
-            $transformer1 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformer1 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public int $transformationCount = 0;
 
@@ -215,7 +215,7 @@ describe('BaseTransformer Cache Integration', function () {
                 }
             };
 
-            $transformer2 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformer2 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public int $transformationCount = 0;
 

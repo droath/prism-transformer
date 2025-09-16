@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Droath\PrismTransformer\Abstract\BaseTransformer;
 use Droath\PrismTransformer\Enums\Provider;
 use Droath\PrismTransformer\Services\ConfigurationService;
+use Droath\PrismTransformer\Services\ModelSchemaService;
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
 use Droath\PrismTransformer\ValueObjects\TransformerMetadata;
 use Illuminate\Cache\CacheManager;
@@ -18,7 +19,7 @@ describe('BaseTransformer Temperature Integration', function () {
     describe('temperature integration with performTransformation', function () {
         test('calls usingTemperature when temperature is defined', function () {
             // Create a transformer with temperature
-            $transformerWithTemperature = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformerWithTemperature = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -59,7 +60,7 @@ describe('BaseTransformer Temperature Integration', function () {
 
         test('does not call usingTemperature when temperature is null', function () {
             // Create a transformer without temperature (default behavior)
-            $transformerWithoutTemperature = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformerWithoutTemperature = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -101,15 +102,15 @@ describe('BaseTransformer Temperature Integration', function () {
             ];
 
             foreach ($temperatureValues as $tempValue => $label) {
-                $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $tempValue, $label) extends BaseTransformer
+                $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class), $tempValue, $label) extends BaseTransformer
                 {
                     private float $testTemperature;
 
                     private string $label;
 
-                    public function __construct(CacheManager $cache, ConfigurationService $configuration, float $temperature, string $label)
+                    public function __construct(CacheManager $cache, ConfigurationService $configuration, ModelSchemaService $modelSchemaService, float $temperature, string $label)
                     {
-                        parent::__construct($cache, $configuration);
+                        parent::__construct($cache, $configuration, $modelSchemaService);
                         $this->testTemperature = $temperature;
                         $this->label = $label;
                     }
@@ -153,7 +154,7 @@ describe('BaseTransformer Temperature Integration', function () {
 
         test('maintains method chaining when integrating temperature', function () {
             // Test that the temperature integration doesn't break the existing method chaining
-            $chainingTestTransformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $chainingTestTransformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -220,13 +221,13 @@ describe('BaseTransformer Temperature Integration', function () {
             ];
 
             foreach ($edgeTemperatures as $temp) {
-                $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $temp) extends BaseTransformer
+                $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class), $temp) extends BaseTransformer
                 {
                     private float $testTemperature;
 
-                    public function __construct(CacheManager $cache, ConfigurationService $configuration, float $temperature)
+                    public function __construct(CacheManager $cache, ConfigurationService $configuration, ModelSchemaService $modelSchemaService, float $temperature)
                     {
-                        parent::__construct($cache, $configuration);
+                        parent::__construct($cache, $configuration, $modelSchemaService);
                         $this->testTemperature = $temperature;
                     }
 
@@ -271,7 +272,7 @@ describe('BaseTransformer Temperature Integration', function () {
         test('temperature configuration affects cache key generation', function () {
             config(['prism-transformer.cache.enabled' => true]);
 
-            $transformer1 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformer1 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -289,7 +290,7 @@ describe('BaseTransformer Temperature Integration', function () {
                 }
             };
 
-            $transformer2 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformer2 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -323,7 +324,7 @@ describe('BaseTransformer Temperature Integration', function () {
         test('null temperature vs specific temperature creates different cache entries', function () {
             config(['prism-transformer.cache.enabled' => true]);
 
-            $transformerNull = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformerNull = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -341,7 +342,7 @@ describe('BaseTransformer Temperature Integration', function () {
                 }
             };
 
-            $transformerSpecific = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformerSpecific = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {

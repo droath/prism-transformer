@@ -6,6 +6,7 @@ use Droath\PrismTransformer\Abstract\BaseTransformer;
 use Droath\PrismTransformer\ContentFetchers\BasicHttpFetcher;
 use Droath\PrismTransformer\Enums\Provider;
 use Droath\PrismTransformer\Services\ConfigurationService;
+use Droath\PrismTransformer\Services\ModelSchemaService;
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
 use Droath\PrismTransformer\ValueObjects\TransformerMetadata;
 use Illuminate\Cache\CacheManager;
@@ -47,7 +48,7 @@ describe('End-to-End Caching Integration', function () {
             );
 
             // Create transformer with caching
-            $transformer = new class($this->cacheManager, $this->configurationService) extends BaseTransformer
+            $transformer = new class($this->cacheManager, $this->configurationService, $this->app->make(ModelSchemaService::class)) extends BaseTransformer
             {
                 public int $transformationCallCount = 0;
 
@@ -123,7 +124,7 @@ describe('End-to-End Caching Integration', function () {
             );
 
             // Use two different transformer instances to ensure different cache keys
-            $transformer1 = new class($this->cacheManager, $this->configurationService) extends BaseTransformer
+            $transformer1 = new class($this->cacheManager, $this->configurationService, $this->app->make(ModelSchemaService::class)) extends BaseTransformer
             {
                 public int $transformationCallCount = 0;
 
@@ -147,7 +148,7 @@ describe('End-to-End Caching Integration', function () {
                 }
             };
 
-            $transformer2 = new class($this->cacheManager, $this->configurationService) extends BaseTransformer
+            $transformer2 = new class($this->cacheManager, $this->configurationService, $this->app->make(ModelSchemaService::class)) extends BaseTransformer
             {
                 public int $transformationCallCount = 0;
 
@@ -232,7 +233,7 @@ describe('End-to-End Caching Integration', function () {
                 $this->configurationService
             );
 
-            $transformer = new class($this->cacheManager, $this->configurationService) extends BaseTransformer
+            $transformer = new class($this->cacheManager, $this->configurationService, $this->app->make(ModelSchemaService::class)) extends BaseTransformer
             {
                 public int $transformationCallCount = 0;
 
@@ -304,7 +305,7 @@ describe('End-to-End Caching Integration', function () {
 
     describe('cache performance characteristics', function () {
         test('cache keys are properly isolated between different operations', function () {
-            $transformer1 = new class($this->cacheManager, $this->configurationService) extends BaseTransformer
+            $transformer1 = new class($this->cacheManager, $this->configurationService, $this->app->make(ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -324,7 +325,7 @@ describe('End-to-End Caching Integration', function () {
                 }
             };
 
-            $transformer2 = new class($this->cacheManager, $this->configurationService) extends BaseTransformer
+            $transformer2 = new class($this->cacheManager, $this->configurationService, $this->app->make(ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -362,7 +363,7 @@ describe('End-to-End Caching Integration', function () {
         });
 
         test('metadata is preserved through caching process', function () {
-            $transformer = new class($this->cacheManager, $this->configurationService) extends BaseTransformer
+            $transformer = new class($this->cacheManager, $this->configurationService, $this->app->make(ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {

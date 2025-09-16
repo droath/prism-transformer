@@ -8,12 +8,14 @@ use Prism\Prism\Prism;
 use Prism\Prism\Text\Response as TextResponse;
 use Prism\Prism\Structured\Response as StructuredResponse;
 use Prism\Prism\Schema\ObjectSchema;
+use Prism\Prism\Contracts\Schema;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Cache\CacheManager;
 use Droath\PrismTransformer\Enums\Provider;
 use Droath\PrismTransformer\Services\ConfigurationService;
+use Droath\PrismTransformer\Services\ModelSchemaService;
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
 use Droath\PrismTransformer\ValueObjects\TransformerMetadata;
 use Droath\PrismTransformer\Contracts\TransformerInterface;
@@ -70,10 +72,13 @@ abstract class BaseTransformer implements TransformerInterface
      * @param ConfigurationService $configuration Service providing access to
      *                                           package configuration including
      *                                           provider settings and defaults
+     * @param ModelSchemaService $modelSchemaService Service for converting
+     *                                              Eloquent models to Prism schemas
      */
     public function __construct(
         protected CacheManager $cache,
-        protected ConfigurationService $configuration
+        protected ConfigurationService $configuration,
+        protected ModelSchemaService $modelSchemaService
     ) {}
 
     /**
@@ -329,25 +334,20 @@ abstract class BaseTransformer implements TransformerInterface
 
     /**
      * Resolve the transformer output format.
+     *
+     * Converts various output format types (null, ObjectSchema, Model) into
+     * a standardized ObjectSchema instance using the ModelSchemaService for
+     * Model conversions.
      */
     protected function resolveOutputFormat(): ?ObjectSchema
     {
         $outputFormat = $this->outputFormat();
 
-        if ($outputFormat === null) {
-            return null;
-        }
-
-        if ($outputFormat instanceof ObjectSchema) {
-            return $outputFormat;
-        }
-
-        return $this->convertModelToObjectSchema($outputFormat);
-    }
-
-    protected function convertModelToObjectSchema(Model $model): ?ObjectSchema
-    {
-        return null;
+        return match (true) {
+            $outputFormat instanceof ObjectSchema => $outputFormat,
+            $outputFormat instanceof Model => $this->modelSchemaService->convertModelToSchema($outputFormat),
+            default => null,
+        };
     }
 
     /**
