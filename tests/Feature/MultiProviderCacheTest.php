@@ -57,7 +57,7 @@ describe('Multi-Provider Cache Performance', function () {
                         TransformerMetadata::make(
                             $this->model(),
                             $this->provider(),
-                            static::class
+                            self::class
                         )
                     );
                 }
@@ -91,7 +91,7 @@ describe('Multi-Provider Cache Performance', function () {
                         TransformerMetadata::make(
                             $this->model(),
                             $this->provider(),
-                            static::class
+                            self::class
                         )
                     );
                 }
@@ -148,7 +148,7 @@ describe('Multi-Provider Cache Performance', function () {
                         TransformerMetadata::make(
                             $this->model(),
                             $this->provider(),
-                            static::class
+                            self::class
                         )
                     );
                 }
@@ -182,7 +182,7 @@ describe('Multi-Provider Cache Performance', function () {
                         TransformerMetadata::make(
                             $this->model(),
                             $this->provider(),
-                            static::class
+                            self::class
                         )
                     );
                 }
@@ -259,7 +259,7 @@ describe('Multi-Provider Cache Performance', function () {
                             TransformerMetadata::make(
                                 $this->model(),
                                 $this->provider(),
-                                static::class
+                                self::class
                             )
                         );
                     }
@@ -309,7 +309,7 @@ describe('Multi-Provider Cache Performance', function () {
                         TransformerMetadata::make(
                             $this->model(),
                             $this->provider(),
-                            static::class
+                            self::class
                         )
                     );
                 }
@@ -334,7 +334,7 @@ describe('Multi-Provider Cache Performance', function () {
                         TransformerMetadata::make(
                             $this->model(),
                             $this->provider(),
-                            static::class
+                            self::class
                         )
                     );
                 }
@@ -388,7 +388,7 @@ describe('Multi-Provider Cache Performance', function () {
                         TransformerMetadata::make(
                             $this->model(),
                             $this->provider(),
-                            static::class
+                            self::class
                         )
                     );
                 }

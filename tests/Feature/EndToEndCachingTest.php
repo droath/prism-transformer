@@ -65,7 +65,7 @@ describe('End-to-End Caching Integration', function () {
                         TransformerMetadata::make(
                             $this->model(),
                             $this->provider(),
-                            static::class
+                            self::class
                         )
                     );
                 }
@@ -141,7 +141,7 @@ describe('End-to-End Caching Integration', function () {
                         TransformerMetadata::make(
                             $this->model(),
                             $this->provider(),
-                            static::class
+                            self::class
                         )
                     );
                 }
@@ -165,7 +165,7 @@ describe('End-to-End Caching Integration', function () {
                         TransformerMetadata::make(
                             $this->model(),
                             $this->provider(),
-                            static::class
+                            self::class
                         )
                     );
                 }
@@ -250,7 +250,7 @@ describe('End-to-End Caching Integration', function () {
                         TransformerMetadata::make(
                             $this->model(),
                             $this->provider(),
-                            static::class
+                            self::class
                         )
                     );
                 }
@@ -318,7 +318,7 @@ describe('End-to-End Caching Integration', function () {
                         TransformerMetadata::make(
                             $this->model(),
                             $this->provider(),
-                            static::class
+                            self::class
                         )
                     );
                 }
@@ -338,7 +338,7 @@ describe('End-to-End Caching Integration', function () {
                         TransformerMetadata::make(
                             $this->model(),
                             $this->provider(),
-                            static::class
+                            self::class
                         )
                     );
                 }
@@ -386,7 +386,7 @@ describe('End-to-End Caching Integration', function () {
                         TransformerMetadata::make(
                             $this->model(),
                             $this->provider(),
-                            static::class
+                            self::class
                         )
                     );
                 }
