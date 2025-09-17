@@ -8,7 +8,6 @@ use Prism\Prism\Prism;
 use Prism\Prism\Text\Response as TextResponse;
 use Prism\Prism\Structured\Response as StructuredResponse;
 use Prism\Prism\Schema\ObjectSchema;
-use Prism\Prism\Contracts\Schema;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Contracts\Cache\Repository;
@@ -27,9 +26,9 @@ use Droath\PrismTransformer\Contracts\TransformerInterface;
  * transformations using Prism PHP integration. It provides comprehensive
  * functionality including:
  *
- * - Intelligent two-layer caching (content fetching + transformation results)
+ * - Intelligent two-layer caching (content fetching and transformation results)
  * - Configuration-driven provider and model selection
- * - Pre/post transformation hooks for extensibility
+ * - Pre- / post-transformation hooks for extensibility
  * - Error handling with detailed context
  * - Performance optimization and resource management
  *
@@ -46,17 +45,6 @@ use Droath\PrismTransformer\Contracts\TransformerInterface;
  *     {
  *         return 'Summarize the following article in 2-3 sentences:';
  *     }
- *
- *     protected function performTransformation(string $content):
- *     TransformerResult
- *     {
- *         $prism = Prism::text()
- *             ->using($this->provider()->value, $this->model())
- *             ->withPrompt($this->prompt());
- *
- *         $response = $prism->generate($content);
- *         return TransformerResult::successful($response);
- *     }
  * }
  * ```
  *
@@ -67,13 +55,13 @@ abstract class BaseTransformer implements TransformerInterface
     /**
      * Create a new BaseTransformer instance.
      *
-     * @param CacheManager $cache Laravel's cache manager for handling
-     *                            both content and transformation caching
-     * @param ConfigurationService $configuration Service providing access to
-     *                                           package configuration including
-     *                                           provider settings and defaults
-     * @param ModelSchemaService $modelSchemaService Service for converting
-     *                                              Eloquent models to Prism schemas
+     * @param CacheManager $cache
+     *   Cache manager for handling both content and transformation caching
+     * @param ConfigurationService $configuration
+     *   Service providing access to package configuration including provider
+     *   settings and defaults
+     * @param ModelSchemaService $modelSchemaService
+     *   Service for converting Eloquent models to Prism schemas
      */
     public function __construct(
         protected CacheManager $cache,
@@ -103,7 +91,7 @@ abstract class BaseTransformer implements TransformerInterface
      * Get the unique name identifier for this transformer.
      *
      * Used for caching, logging, and debugging purposes. Returns
-     * the fully-qualified class name as a unique identifier.
+     * the fully qualified class name as a unique identifier.
      *
      * @return string The transformer's unique identifier
      */
@@ -113,7 +101,7 @@ abstract class BaseTransformer implements TransformerInterface
     }
 
     /**
-     * Get the AI provider to use for this transformation.
+     * Get the AI provider to use it for this transformation.
      *
      * Returns the default provider from configuration. Can be overridden
      * by concrete transformers for provider-specific optimizations.
@@ -163,8 +151,7 @@ abstract class BaseTransformer implements TransformerInterface
      *
      * Each tool should be defined as an array with the following structure:
      * - name: The function name (required)
-     * - description: Human-readable description of what the tool does
-     * (required)
+     * - description: Human-readable description of what the tool does (required)
      * - parameters: JSON schema defining the expected parameters (optional)
      *
      * @return array An array of tool definitions for function calling
@@ -211,8 +198,8 @@ abstract class BaseTransformer implements TransformerInterface
      * Returning null will use the provider's default temperature setting,
      * allowing for provider-specific optimizations and configurations.
      *
-     * @return float|null The temperature value (typically 0.0-2.0) or null for
-     *     provider default
+     * @return float|null
+     *   The temperature value (typically 0.0-2.0) or null for provider default
      */
     protected function temperature(): ?float
     {
@@ -237,8 +224,8 @@ abstract class BaseTransformer implements TransformerInterface
      * Returning null will use the provider's default topP setting, if
      * available.
      *
-     * @return float|null The topP value (typically 0.0-1.0) or null for
-     *     provider default
+     * @return float|null
+     *   The topP value (typically 0.0-1.0) or null for provider default
      */
     protected function topP(): ?float
     {
@@ -254,7 +241,7 @@ abstract class BaseTransformer implements TransformerInterface
      * control over the transformation output structure.
      *
      * If this method returns an empty array (default), the system will
-     * fall back to automatic detection using model fillable attributes
+     * fall back to automatic detection using model-fillable attributes
      * and cast types.
      *
      * @return array<string, array{required?: bool, type?: string}>
@@ -314,7 +301,7 @@ abstract class BaseTransformer implements TransformerInterface
             $response = $this->makeRequest();
 
             return TransformerResult::successful(
-                $response->text,
+                $this->extractResponseData($response),
                 TransformerMetadata::make(
                     $this->model(),
                     $this->provider(),
@@ -331,6 +318,24 @@ abstract class BaseTransformer implements TransformerInterface
                 )
             );
         }
+    }
+
+    /**
+     * Extract the response data from the response object.
+     *
+     * @throws \JsonException
+     */
+    protected function extractResponseData(
+        TextResponse|StructuredResponse $response
+    ): string {
+        if (
+            $response instanceof StructuredResponse
+            && $response->structured !== null
+        ) {
+            return json_encode($response->structured, JSON_THROW_ON_ERROR);
+        }
+
+        return $response->text;
     }
 
     /**
@@ -432,10 +437,10 @@ abstract class BaseTransformer implements TransformerInterface
             static::class,
             $this->prompt(),
             $this->provider()->value,
+            $this->topP(),
             $this->model(),
             $this->tools(),
             $this->temperature(),
-            $this->topP(),
         ])));
     }
 

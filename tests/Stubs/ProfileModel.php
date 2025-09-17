@@ -11,5 +11,10 @@ class ProfileModel extends Model
     protected $fillable = [
         'bio',
         'website',
+        'age',
+    ];
+
+    protected $casts = [
+        'age' => 'integer',
     ];
 }
