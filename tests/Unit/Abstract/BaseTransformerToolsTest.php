@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Droath\PrismTransformer\Abstract\BaseTransformer;
 use Droath\PrismTransformer\Services\ConfigurationService;
-use Droath\PrismTransformer\Services\ModelSchemaService;
 use Illuminate\Cache\CacheManager;
 
 describe('BaseTransformer Tools Configuration', function () {
