@@ -13,9 +13,11 @@ use Prism\Prism\Contracts\Schema;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Service responsible for converting Laravel Eloquent models to Prism ObjectSchema instances.
+ * Service responsible for converting Laravel Eloquent models to Prism
+ * ObjectSchema instances.
  *
- * This service provides clean separation of concerns by extracting model schema
+ * This service provides clean separation of concerns by extracting model
+ * schema
  * conversion logic from transformers. It handles the complexities of Laravel's
  * cast system and provides robust error handling for edge cases.
  *
@@ -37,23 +39,24 @@ class ModelSchemaService
     /**
      * Convert a Laravel Eloquent model to a Prism ObjectSchema.
      *
-     * This method extracts fillable attributes and their cast types from the model
-     * to generate a corresponding ObjectSchema for structured LLM responses.
-     * Returns null if the model cannot be converted or has no fillable attributes.
+     * This method extracts fillable attributes and their cast types from the
+     * model to generate a corresponding ObjectSchema for structured LLM
+     * responses. Returns null if the model cannot be converted or has no
+     * fillable attributes.
      *
      * @param Model $model The Eloquent model to convert
+     * @param array<string, array{required?: bool, type?: string}> $config
+     *     Optional configuration mapping field names to their settings
      *
      * @return ObjectSchema|null The generated schema or null if conversion fails
      */
-    public function convertModelToSchema(Model $model): ?ObjectSchema
+    public function convertModelToSchema(Model $model, array $config = []): ?ObjectSchema
     {
-        $modelAttributes = $this->extractModelAttributes($model);
-
-        if ($modelAttributes === null) {
-            return null;
-        }
-
-        $schemaData = $this->buildSchemaProperties($modelAttributes);
+        $schemaData = ! empty($config)
+            ? $this->buildSchemaFromConfig($model, $config)
+            : $this->buildSchemaProperties(
+                $this->extractModelAttributes($model) ?? []
+            );
 
         if (empty($schemaData['properties'])) {
             return null;
@@ -63,10 +66,47 @@ class ModelSchemaService
     }
 
     /**
-     * Create a Prism schema for a Laravel cast type using modern match expression.
+     * Convert an array of data into a populated Laravel Eloquent model.
      *
-     * This method maps Laravel's cast types to appropriate Prism schema objects,
-     * providing type-safe schema generation for structured LLM responses.
+     * This method takes raw data (typically from JSON) and converts it into a
+     * properly hydrated Laravel model instance. It respects model-fillable
+     * attributes and applies model casts automatically.
+     *
+     * @param string $modelClass The fully qualified model class name
+     * @param array $data The data to populate the model with
+     *
+     * @return Model The populated model instance
+     *
+     * @throws \InvalidArgumentException If the model class is invalid
+     *
+     * @example Basic usage:
+     * ```php
+     * $service = new ModelSchemaService();
+     * $data = ['name' => 'John', 'age' => 30];
+     * $user = $service->convertDataToModel(User::class, $data);
+     * ```
+     */
+    public function convertDataToModel(string $modelClass, array $data): Model
+    {
+        if (! class_exists($modelClass)) {
+            throw new \InvalidArgumentException("Model class {$modelClass} does not exist");
+        }
+
+        if (! is_subclass_of($modelClass, Model::class)) {
+            $className = basename(str_replace('\\', '/', $modelClass));
+            throw new \InvalidArgumentException("Class {$className} is not an Eloquent model");
+        }
+
+        return $modelClass::make($data);
+    }
+
+    /**
+     * Create a Prism schema for a Laravel cast type using a modern match
+     * expression.
+     *
+     * This method maps Laravel's cast types to appropriate Prism schema
+     * objects, providing type-safe schema generation for structured LLM
+     * responses.
      *
      * @param string $fieldName The name of the field
      * @param string $castType The Laravel cast type
@@ -123,6 +163,42 @@ class ModelSchemaService
     }
 
     /**
+     * Build schema properties from an explicit configuration.
+     *
+     * @param Model $model The model to get fallback information from
+     * @param array<string, array{required?: bool, type?: string}> $config
+     *
+     * @return array{properties: array<Schema>, requiredFields: array<string>}
+     */
+    private function buildSchemaFromConfig(Model $model, array $config): array
+    {
+        $properties = [];
+        $requiredFields = [];
+
+        $modelCasts = $model->getCasts();
+
+        foreach ($config as $fieldName => $fieldConfig) {
+            if (! $this->isValidFieldName($fieldName)) {
+                continue;
+            }
+            $isRequired = $fieldConfig['required'] ?? false;
+            $fieldType = $fieldConfig['type'] ?? $modelCasts[$fieldName] ?? 'string';
+
+            if ($schema = $this->createSchemaForCastType($fieldName, $fieldType)) {
+                $properties[] = $schema;
+                if ($isRequired) {
+                    $requiredFields[] = $fieldName;
+                }
+            }
+        }
+
+        return [
+            'properties' => $properties,
+            'requiredFields' => $requiredFields,
+        ];
+    }
+
+    /**
      * Build schema properties from model attributes.
      *
      * @param array{fillable: array<string>, casts: array<string, string>} $modelAttributes
@@ -134,16 +210,17 @@ class ModelSchemaService
         $properties = [];
         $requiredFields = [];
 
-        foreach ($modelAttributes['fillable'] as $field) {
+        $casts = $modelAttributes['casts'] ?? [];
+        $fillable = $modelAttributes['fillable'] ?? [];
+
+        foreach ($fillable as $field) {
             if (! $this->isValidFieldName($field)) {
                 continue;
             }
 
             try {
-                $castType = $modelAttributes['casts'][$field] ?? 'string';
-                $schema = $this->createSchemaForCastType($field, $castType);
-
-                if ($schema !== null) {
+                $castType = $casts[$field] ?? 'string';
+                if ($schema = $this->createSchemaForCastType($field, $castType)) {
                     $properties[] = $schema;
                     $requiredFields[] = $field;
                 }

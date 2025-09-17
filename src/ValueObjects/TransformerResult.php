@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace Droath\PrismTransformer\ValueObjects;
 
+use Droath\PrismTransformer\Services\ModelSchemaService;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use JsonSerializable;
 
 /**
@@ -299,5 +303,110 @@ readonly class TransformerResult implements Arrayable, Jsonable, JsonSerializabl
     public function jsonSerialize(): array
     {
         return $this->toArray();
+    }
+
+    /**
+     * Create a model instance from the transformation result.
+     *
+     * This convenience method converts the JSON response data into a populated
+     * Laravel Eloquent model instance. It supports Laravel validation integration,
+     * respects model-fillable attributes, and applies model casts automatically.
+     *
+     * The actual model hydration is delegated to ModelSchemaService to maintain
+     * separation of concerns and improve code reusability.
+     *
+     * @param string $modelClass
+     *   The fully qualified model class name
+     * @param array<string, string|array> $validationRules
+     *   Optional Laravel validation rules to apply before model creation
+     *
+     * @return Model The populated model instance
+     *
+     * @throws \RuntimeException If transformation failed or no content available
+     * @throws \JsonException If the response data is not valid JSON
+     * @throws \InvalidArgumentException If a model class is invalid
+     * @throws ValidationException If validation rules fail
+     *
+     * @example Basic usage:
+     * ```php
+     * $result = TransformerResult::successful('{"name": "John", "age": 30}');
+     * $user = $result->toModel(User::class);
+     * ```
+     * @example With validation:
+     * ```php
+     * $rules = ['name' => 'required|string', 'age' => 'integer|min:18'];
+     * $user = $result->toModel(User::class, $rules);
+     * ```
+     *
+     * @api
+     */
+    public function toModel(string $modelClass, array $validationRules = []): Model
+    {
+        $this->ensureTransformationIsSuccessful();
+
+        $data = $this->parseJsonData();
+
+        if (! empty($validationRules)) {
+            $this->validateData($data, $validationRules);
+        }
+
+        $modelSchemaService = app(ModelSchemaService::class);
+
+        return $modelSchemaService->convertDataToModel($modelClass, $data);
+    }
+
+    /**
+     * Ensure that the transformation is successful.
+     */
+    protected function ensureTransformationIsSuccessful(): void
+    {
+        if ($this->isFailed()) {
+            throw new \RuntimeException(
+                'Cannot create a model from failed transformation. Errors: '.
+                implode(', ', $this->errors)
+            );
+        }
+
+        if ($this->data === null) {
+            throw new \RuntimeException(
+                'No content available to create a model'
+            );
+        }
+    }
+
+    /**
+     * Validate the given data against the given rules.
+     */
+    protected function validateData(array $data, array $rules): void
+    {
+        $validator = Validator::make($data, $rules);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+    }
+
+    /**
+     * Parse the JSON data into an associative array.
+     *
+     * @throws \JsonException
+     */
+    protected function parseJsonData(): array
+    {
+        try {
+            $data = json_decode($this->data, true, flags: JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            throw new \JsonException(
+                "Invalid JSON in transformation result: {$e->getMessage()}", 0, $e
+            );
+        }
+
+        if (! is_array($data)) {
+            throw new \InvalidArgumentException(
+                'JSON must represent an object for model creation'
+            );
+        }
+
+        return $data;
     }
 }

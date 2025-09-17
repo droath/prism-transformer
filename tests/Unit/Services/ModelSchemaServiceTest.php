@@ -251,7 +251,7 @@ describe('ModelSchemaService', function () {
             // Test using a service that simulates getFillable throwing exception
             $service = new class extends ModelSchemaService
             {
-                public function convertModelToSchema(Model $model): ?ObjectSchema
+                public function convertModelToSchema(Model $model, array $config = []): ?ObjectSchema
                 {
                     try {
                         // Simulate the exception that would occur in extractModelAttributes
@@ -288,7 +288,7 @@ describe('ModelSchemaService', function () {
             // Test by simulating corrupted data handling
             $service = new class extends ModelSchemaService
             {
-                public function convertModelToSchema(Model $model): ?ObjectSchema
+                public function convertModelToSchema(Model $model, array $config = []): ?ObjectSchema
                 {
                     // Simulate the scenario where fillable data is corrupted
                     $modelAttributes = ['fillable' => null, 'casts' => []];
@@ -509,6 +509,128 @@ describe('ModelSchemaService', function () {
             expect($result2)->toBeInstanceOf(ObjectSchema::class);
             expect($result1->name)->toBe($result2->name);
             expect(count($result1->properties))->toBe(count($result2->properties));
+        });
+    });
+
+    describe('convertDataToModel method', function () {
+        test('creates model from valid data array', function () {
+            $data = [
+                'name' => 'John Doe',
+                'email' => 'john@example.com',
+                'age' => 30,
+                'is_active' => true,
+            ];
+
+            $model = $this->service->convertDataToModel(TestModel::class, $data);
+
+            expect($model)->toBeInstanceOf(TestModel::class);
+            expect($model->name)->toBe('John Doe');
+            expect($model->email)->toBe('john@example.com');
+            expect($model->age)->toBe(30);
+            expect($model->is_active)->toBe(true);
+        });
+
+        test('creates model with partial data using fillable attributes', function () {
+            $data = [
+                'name' => 'Jane Smith',
+                'age' => 25,
+                'extra_field' => 'ignored', // Should be ignored due to fillable
+            ];
+
+            $model = $this->service->convertDataToModel(TestModel::class, $data);
+
+            expect($model)->toBeInstanceOf(TestModel::class);
+            expect($model->name)->toBe('Jane Smith');
+            expect($model->age)->toBe(25);
+            expect($model->is_active)->toBe(true); // Default value
+            expect($model->email)->toBeNull();
+            expect(isset($model->extra_field))->toBeFalse();
+        });
+
+        test('applies model casts correctly', function () {
+            $data = [
+                'name' => 'Test User',
+                'age' => '42', // String that should be cast to integer
+                'is_active' => 'true', // String that should be cast to boolean
+            ];
+
+            $model = $this->service->convertDataToModel(TestModel::class, $data);
+
+            expect($model->age)->toBe(42);
+            expect($model->age)->toBeInt();
+            expect($model->is_active)->toBe(true);
+            expect($model->is_active)->toBeBool();
+        });
+
+        test('handles different model types', function () {
+            $profileData = [
+                'bio' => 'Software Developer',
+                'website' => 'https://example.com',
+            ];
+
+            $model = $this->service->convertDataToModel(ProfileModel::class, $profileData);
+
+            expect($model)->toBeInstanceOf(ProfileModel::class);
+            expect($model->bio)->toBe('Software Developer');
+            expect($model->website)->toBe('https://example.com');
+        });
+
+        test('handles empty data gracefully', function () {
+            $data = [];
+
+            $model = $this->service->convertDataToModel(TestModel::class, $data);
+
+            expect($model)->toBeInstanceOf(TestModel::class);
+            expect($model->name)->toBeNull();
+            expect($model->is_active)->toBe(true); // Default value
+        });
+
+        test('throws exception for non-existent model class', function () {
+            $data = ['name' => 'Test'];
+
+            expect(fn () => $this->service->convertDataToModel('NonExistentModel', $data))
+                ->toThrow(\InvalidArgumentException::class, 'Model class NonExistentModel does not exist');
+        });
+
+        test('throws exception for class that is not a model', function () {
+            $data = ['name' => 'Test'];
+
+            expect(fn () => $this->service->convertDataToModel(\stdClass::class, $data))
+                ->toThrow(\InvalidArgumentException::class, 'Class stdClass is not an Eloquent model');
+        });
+
+        test('respects model fillable attributes', function () {
+            $data = [
+                'name' => 'Test User',
+                'email' => 'test@example.com',
+                'password' => 'secret', // Not fillable in TestModel
+                'admin' => true, // Not fillable in TestModel
+            ];
+
+            $model = $this->service->convertDataToModel(TestModel::class, $data);
+
+            expect($model->name)->toBe('Test User');
+            expect($model->email)->toBe('test@example.com');
+            expect(isset($model->password))->toBeFalse();
+            expect(isset($model->admin))->toBeFalse();
+        });
+
+        test('handles nested data by ignoring non-scalar values', function () {
+            $data = [
+                'name' => 'User with nested data',
+                'profile' => [
+                    'bio' => 'This should be ignored for TestModel',
+                ],
+                'age' => 28,
+                'tags' => ['tag1', 'tag2'], // Array value should be ignored
+            ];
+
+            $model = $this->service->convertDataToModel(TestModel::class, $data);
+
+            expect($model->name)->toBe('User with nested data');
+            expect($model->age)->toBe(28);
+            expect(isset($model->profile))->toBeFalse();
+            expect(isset($model->tags))->toBeFalse();
         });
     });
 });

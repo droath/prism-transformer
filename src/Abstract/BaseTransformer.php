@@ -246,6 +246,57 @@ abstract class BaseTransformer implements TransformerInterface
     }
 
     /**
+     * Define model schema configuration for structured output generation.
+     *
+     * Override this method in concrete transformers to explicitly control
+     * which fields should be included, their types, and whether they are
+     * required when generating schemas from models. This provides fine-grained
+     * control over the transformation output structure.
+     *
+     * If this method returns an empty array (default), the system will
+     * fall back to automatic detection using model fillable attributes
+     * and cast types.
+     *
+     * @return array<string, array{required?: bool, type?: string}>
+     *   Configuration array mapping field names to their configuration:
+     *   - required: Whether the field is required (defaults to false if not set)
+     *   - type: The JSON schema type for the field (defaults to model cast or 'string')
+     *
+     * @example Explicit schema configuration:
+     * ```php
+     * protected function getModelSchemaConfig(): array
+     * {
+     *     return [
+     *         'title' => [
+     *             'required' => true,
+     *             'type' => 'string'
+     *         ],
+     *         'content' => [
+     *             'required' => true,
+     *             'type' => 'string'
+     *         ],
+     *         'summary' => [
+     *             'required' => false,
+     *             'type' => 'string'
+     *         ],
+     *         'word_count' => [
+     *             'type' => 'integer'
+     *             // required defaults to false
+     *         ],
+     *         'is_published' => [
+     *             'type' => 'boolean'
+     *             // required defaults to false
+     *         ]
+     *     ];
+     * }
+     * ```
+     */
+    protected function getModelSchemaConfig(): array
+    {
+        return [];
+    }
+
+    /**
      * Prism PHP integration for LLM transformation.
      *
      * This method uses Prism::structured() to perform the actual
@@ -338,6 +389,9 @@ abstract class BaseTransformer implements TransformerInterface
      * Converts various output format types (null, ObjectSchema, Model) into
      * a standardized ObjectSchema instance using the ModelSchemaService for
      * Model conversions.
+     *
+     * Uses the transformer's schema configuration when working with Model
+     * instances.
      */
     protected function resolveOutputFormat(): ?ObjectSchema
     {
@@ -345,7 +399,10 @@ abstract class BaseTransformer implements TransformerInterface
 
         return match (true) {
             $outputFormat instanceof ObjectSchema => $outputFormat,
-            $outputFormat instanceof Model => $this->modelSchemaService->convertModelToSchema($outputFormat),
+            $outputFormat instanceof Model => $this->modelSchemaService->convertModelToSchema(
+                $outputFormat,
+                $this->getModelSchemaConfig()
+            ),
             default => null,
         };
     }
