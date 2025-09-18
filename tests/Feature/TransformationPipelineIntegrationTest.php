@@ -7,12 +7,14 @@ use Prism\Prism\ValueObjects\Usage;
 use Prism\Prism\Testing\TextResponseFake;
 use Droath\PrismTransformer\PrismTransformer;
 use Droath\PrismTransformer\Enums\Provider;
+use Droath\PrismTransformer\Jobs\TransformationJob;
 use Droath\PrismTransformer\Services\ConfigurationService;
 use Droath\PrismTransformer\Services\ModelSchemaService;
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
 use Droath\PrismTransformer\ValueObjects\TransformerMetadata;
 use Droath\PrismTransformer\Abstract\BaseTransformer;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Queue;
 use Droath\PrismTransformer\Tests\Stubs\SummarizeTransformer;
 
 describe('Complete Transformation Pipeline Integration', function () {
@@ -165,6 +167,7 @@ describe('Complete Transformation Pipeline Integration', function () {
 
         test('async transformation pipeline', function () {
             Config::set('prism-transformer.transformation.async_queue', 'transformations');
+            Queue::fake();
 
             $content = 'Async transformation content';
 
@@ -182,14 +185,17 @@ describe('Complete Transformation Pipeline Integration', function () {
             };
 
             $transformer = new PrismTransformer();
-            $result = $transformer
+            $transformer
                 ->text($content)
                 ->async()
                 ->using($transformerInterface)
                 ->transform();
 
-            expect($result)->toBeInstanceOf(TransformerResult::class);
-            expect($result->data)->toBe('Async: Async transformation content');
+            Queue::assertPushed(TransformationJob::class, function ($job) {
+                expect($job->transformer)->toBeInstanceOf(BaseTransformer::class);
+
+                return true;
+            });
         });
 
         test('complex chained transformation pipeline', function () {

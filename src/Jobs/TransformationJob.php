@@ -52,7 +52,7 @@ class TransformationJob implements ShouldQueue
         public string $content,
         public array $context = []
     ) {
-        $queueName = config('prism-transformer.async_queue');
+        $queueName = config('prism-transformer.transformation.async_queue');
         if ($queueName) {
             $this->onQueue($queueName);
         }

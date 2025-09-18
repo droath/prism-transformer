@@ -262,7 +262,7 @@ describe('TransformationJob', function () {
 
     describe('queue configuration integration', function () {
         test('respects queue configuration settings', function () {
-            config(['prism-transformer.async_queue' => 'high-priority']);
+            config(['prism-transformer.transformation.async_queue' => 'high-priority']);
 
             $job = new TransformationJob(
                 app(SummarizeTransformer::class),
@@ -274,7 +274,7 @@ describe('TransformationJob', function () {
         });
 
         test('uses default queue when not configured', function () {
-            config(['prism-transformer.async_queue' => null]);
+            config(['prism-transformer.transformation.async_queue' => null]);
 
             $job = new TransformationJob(
                 app(SummarizeTransformer::class),
