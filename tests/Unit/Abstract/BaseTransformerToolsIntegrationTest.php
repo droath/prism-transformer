@@ -19,7 +19,7 @@ describe('BaseTransformer Tools Integration', function () {
     describe('tools integration with performTransformation', function () {
         test('calls withTools when tools are defined', function () {
             // Create a transformer with tools
-            $transformerWithTools = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformerWithTools = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -72,7 +72,7 @@ describe('BaseTransformer Tools Integration', function () {
 
         test('does not call withTools when tools array is empty', function () {
             // Create a transformer without tools (default behavior)
-            $transformerWithoutTools = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformerWithoutTools = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -106,7 +106,7 @@ describe('BaseTransformer Tools Integration', function () {
         });
 
         test('handles complex tool configurations correctly', function () {
-            $complexToolsTransformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $complexToolsTransformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -179,7 +179,7 @@ describe('BaseTransformer Tools Integration', function () {
         });
 
         test('handles malformed tools gracefully in transformation', function () {
-            $malformedToolsTransformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $malformedToolsTransformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -233,7 +233,7 @@ describe('BaseTransformer Tools Integration', function () {
 
         test('maintains method chaining when integrating tools', function () {
             // Test that the tools integration doesn't break the existing method chaining
-            $chainingTestTransformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $chainingTestTransformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -286,7 +286,7 @@ describe('BaseTransformer Tools Integration', function () {
         test('tools configuration affects cache key generation', function () {
             config(['prism-transformer.cache.enabled' => true]);
 
-            $transformer1 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformer1 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -306,7 +306,7 @@ describe('BaseTransformer Tools Integration', function () {
                 }
             };
 
-            $transformer2 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformer2 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Droath\PrismTransformer\Abstract\BaseTransformer;
 use Droath\PrismTransformer\Enums\Provider;
 use Droath\PrismTransformer\Services\ConfigurationService;
+use Droath\PrismTransformer\Services\ModelSchemaService;
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
 use Droath\PrismTransformer\ValueObjects\TransformerMetadata;
 use Illuminate\Support\Facades\Cache;
@@ -16,7 +17,7 @@ use function Pest\Laravel\mock;
 describe('BaseTransformer Caching', function () {
     beforeEach(function () {
         // Create a concrete implementation for testing
-        $this->transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+        $this->transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
         {
             public function prompt(): string
             {
@@ -37,7 +38,7 @@ describe('BaseTransformer Caching', function () {
             $configMock->shouldReceive('getTransformerDataCacheTtl')->andReturn(3600);
             $configMock->shouldReceive('getDefaultProvider')->andReturn(Provider::OPENAI);
 
-            $transformer = new class($this->app->make(CacheManager::class), $configMock) extends BaseTransformer
+            $transformer = new class($this->app->make(CacheManager::class), $configMock, $this->app->make(ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -74,7 +75,7 @@ describe('BaseTransformer Caching', function () {
             Config::set('prism-transformer.cache.enabled', true);
 
             // Create a testable transformer that tracks calls
-            $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public int $callCount = 0;
 
@@ -107,7 +108,7 @@ describe('BaseTransformer Caching', function () {
         test('different transformers use different cache keys', function () {
             Config::set('prism-transformer.cache.enabled', true);
 
-            $transformer1 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformer1 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public int $callCount = 0;
 
@@ -124,7 +125,7 @@ describe('BaseTransformer Caching', function () {
                 }
             };
 
-            $transformer2 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformer2 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public int $callCount = 0;
 
@@ -163,7 +164,7 @@ describe('BaseTransformer Caching', function () {
         test('different providers use different cache keys', function () {
             Config::set('prism-transformer.default_provider', Provider::OPENAI);
 
-            $transformer1 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformer1 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public int $callCount = 0;
 
@@ -185,7 +186,7 @@ describe('BaseTransformer Caching', function () {
                 }
             };
 
-            $transformer2 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformer2 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public int $callCount = 0;
 
@@ -224,7 +225,7 @@ describe('BaseTransformer Caching', function () {
         test('stores and retrieves successful transformation results', function () {
             Config::set('prism-transformer.cache.enabled', true);
 
-            $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public int $callCount = 0;
 
@@ -262,7 +263,7 @@ describe('BaseTransformer Caching', function () {
         test('stores and retrieves failed transformation results', function () {
             Config::set('prism-transformer.cache.enabled', true);
 
-            $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public int $callCount = 0;
 
@@ -300,7 +301,7 @@ describe('BaseTransformer Caching', function () {
         test('preserves metadata in cached results', function () {
             Config::set('prism-transformer.cache.enabled', true);
 
-            $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -333,7 +334,7 @@ describe('BaseTransformer Caching', function () {
         test('handles special characters in cached content', function () {
             Config::set('prism-transformer.cache.enabled', true);
 
-            $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -393,7 +394,7 @@ describe('BaseTransformer Caching', function () {
         test('bypasses cache when caching is disabled', function () {
             Config::set('prism-transformer.cache.enabled', false);
 
-            $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public int $callCount = 0;
 
@@ -424,7 +425,7 @@ describe('BaseTransformer Caching', function () {
         test('handles cache retrieval errors gracefully', function () {
             Config::set('prism-transformer.cache.enabled', true);
 
-            $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public int $callCount = 0;
 
@@ -455,7 +456,7 @@ describe('BaseTransformer Caching', function () {
         test('different transformer instances use separate caches', function () {
             Config::set('prism-transformer.cache.enabled', true);
 
-            $transformer1 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformer1 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public int $callCount = 0;
 
@@ -472,7 +473,7 @@ describe('BaseTransformer Caching', function () {
                 }
             };
 
-            $transformer2 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformer2 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public int $callCount = 0;
 

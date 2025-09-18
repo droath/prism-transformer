@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Droath\PrismTransformer\Abstract\BaseTransformer;
 use Droath\PrismTransformer\Enums\Provider;
 use Droath\PrismTransformer\Services\ConfigurationService;
+use Droath\PrismTransformer\Services\ModelSchemaService;
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
 use Droath\PrismTransformer\ValueObjects\TransformerMetadata;
 use Illuminate\Cache\CacheManager;
@@ -29,7 +30,7 @@ describe('Multi-Provider Cache Performance', function () {
     describe('provider-specific cache isolation', function () {
         test('different providers maintain separate cache entries for same content', function () {
             // Create transformers for different providers
-            $openaiTransformer = new class($this->cacheManager, $this->configurationService) extends BaseTransformer
+            $openaiTransformer = new class($this->cacheManager, $this->configurationService, $this->app->make(ModelSchemaService::class)) extends BaseTransformer
             {
                 public int $transformationCallCount = 0;
 
@@ -63,7 +64,7 @@ describe('Multi-Provider Cache Performance', function () {
                 }
             };
 
-            $anthropicTransformer = new class($this->cacheManager, $this->configurationService) extends BaseTransformer
+            $anthropicTransformer = new class($this->cacheManager, $this->configurationService, $this->app->make(ModelSchemaService::class)) extends BaseTransformer
             {
                 public int $transformationCallCount = 0;
 
@@ -120,7 +121,7 @@ describe('Multi-Provider Cache Performance', function () {
         });
 
         test('same provider with different models maintains separate caches', function () {
-            $gpt4Transformer = new class($this->cacheManager, $this->configurationService) extends BaseTransformer
+            $gpt4Transformer = new class($this->cacheManager, $this->configurationService, $this->app->make(ModelSchemaService::class)) extends BaseTransformer
             {
                 public int $transformationCallCount = 0;
 
@@ -154,7 +155,7 @@ describe('Multi-Provider Cache Performance', function () {
                 }
             };
 
-            $gpt4MiniTransformer = new class($this->cacheManager, $this->configurationService) extends BaseTransformer
+            $gpt4MiniTransformer = new class($this->cacheManager, $this->configurationService, $this->app->make(ModelSchemaService::class)) extends BaseTransformer
             {
                 public int $transformationCallCount = 0;
 
@@ -221,18 +222,19 @@ describe('Multi-Provider Cache Performance', function () {
 
             // Create transformers for each provider
             foreach ($providers as $name => [$provider, $model]) {
-                $transformers[$name] = new class($this->cacheManager, $this->configurationService, $provider, $model, $name) extends BaseTransformer
+                $transformers[$name] = new class($this->cacheManager, $this->configurationService, $this->app->make(ModelSchemaService::class), $provider, $model, $name) extends BaseTransformer
                 {
                     public int $transformationCallCount = 0;
 
                     public function __construct(
                         CacheManager $cache,
                         ConfigurationService $configuration,
+                        ModelSchemaService $modelSchemaService,
                         private Provider $testProvider,
                         private string $testModel,
                         private string $testName
                     ) {
-                        parent::__construct($cache, $configuration);
+                        parent::__construct($cache, $configuration, $modelSchemaService);
                     }
 
                     public function prompt(): string
@@ -290,7 +292,7 @@ describe('Multi-Provider Cache Performance', function () {
 
         test('cache invalidation affects only specific provider', function () {
             // This test verifies that cache operations are properly isolated
-            $transformer1 = new class($this->cacheManager, $this->configurationService) extends BaseTransformer
+            $transformer1 = new class($this->cacheManager, $this->configurationService, $this->app->make(ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -315,7 +317,7 @@ describe('Multi-Provider Cache Performance', function () {
                 }
             };
 
-            $transformer2 = new class($this->cacheManager, $this->configurationService) extends BaseTransformer
+            $transformer2 = new class($this->cacheManager, $this->configurationService, $this->app->make(ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -369,7 +371,7 @@ describe('Multi-Provider Cache Performance', function () {
             $configService = new ConfigurationService();
             expect($configService->getTransformerDataCacheTtl())->toBe(7200);
 
-            $transformer = new class($this->cacheManager, $this->configurationService) extends BaseTransformer
+            $transformer = new class($this->cacheManager, $this->configurationService, $this->app->make(ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {

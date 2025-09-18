@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Droath\PrismTransformer\Abstract\BaseTransformer;
 use Droath\PrismTransformer\Enums\Provider;
 use Droath\PrismTransformer\Services\ConfigurationService;
+use Droath\PrismTransformer\Services\ModelSchemaService;
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
 use Droath\PrismTransformer\ValueObjects\TransformerMetadata;
 use Illuminate\Cache\CacheManager;
@@ -18,7 +19,7 @@ describe('BaseTransformer TopP Integration', function () {
     describe('topP integration with performTransformation', function () {
         test('calls usingTopP when topP is defined', function () {
             // Create a transformer with topP
-            $transformerWithTopP = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformerWithTopP = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -59,7 +60,7 @@ describe('BaseTransformer TopP Integration', function () {
 
         test('does not call usingTopP when topP is null', function () {
             // Create a transformer without topP (default behavior)
-            $transformerWithoutTopP = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformerWithoutTopP = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -101,15 +102,15 @@ describe('BaseTransformer TopP Integration', function () {
             ];
 
             foreach ($topPValues as $topPValue => $label) {
-                $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $topPValue, $label) extends BaseTransformer
+                $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class), $topPValue, $label) extends BaseTransformer
                 {
                     private float $testTopP;
 
                     private string $label;
 
-                    public function __construct(CacheManager $cache, ConfigurationService $configuration, float $topP, string $label)
+                    public function __construct(CacheManager $cache, ConfigurationService $configuration, ModelSchemaService $modelSchemaService, float $topP, string $label)
                     {
-                        parent::__construct($cache, $configuration);
+                        parent::__construct($cache, $configuration, $modelSchemaService);
                         $this->testTopP = $topP;
                         $this->label = $label;
                     }
@@ -153,7 +154,7 @@ describe('BaseTransformer TopP Integration', function () {
 
         test('maintains method chaining when integrating topP', function () {
             // Test that the topP integration doesn't break the existing method chaining
-            $chainingTestTransformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $chainingTestTransformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -229,13 +230,13 @@ describe('BaseTransformer TopP Integration', function () {
             ];
 
             foreach ($edgeTopPValues as $topP) {
-                $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $topP) extends BaseTransformer
+                $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class), $topP) extends BaseTransformer
                 {
                     private float $testTopP;
 
-                    public function __construct(CacheManager $cache, ConfigurationService $configuration, float $topP)
+                    public function __construct(CacheManager $cache, ConfigurationService $configuration, ModelSchemaService $modelSchemaService, float $topP)
                     {
-                        parent::__construct($cache, $configuration);
+                        parent::__construct($cache, $configuration, $modelSchemaService);
                         $this->testTopP = $topP;
                     }
 
@@ -277,7 +278,7 @@ describe('BaseTransformer TopP Integration', function () {
 
         test('combines topP with temperature and tools correctly', function () {
             // Test that all configuration methods work together
-            $combinedConfigTransformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $combinedConfigTransformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -338,7 +339,7 @@ describe('BaseTransformer TopP Integration', function () {
         test('topP configuration affects cache key generation', function () {
             config(['prism-transformer.cache.enabled' => true]);
 
-            $transformer1 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformer1 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -356,7 +357,7 @@ describe('BaseTransformer TopP Integration', function () {
                 }
             };
 
-            $transformer2 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformer2 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -390,7 +391,7 @@ describe('BaseTransformer TopP Integration', function () {
         test('null topP vs specific topP creates different cache entries', function () {
             config(['prism-transformer.cache.enabled' => true]);
 
-            $transformerNull = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformerNull = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
@@ -408,7 +409,7 @@ describe('BaseTransformer TopP Integration', function () {
                 }
             };
 
-            $transformerSpecific = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class)) extends BaseTransformer
+            $transformerSpecific = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public function prompt(): string
                 {
