@@ -6,11 +6,11 @@
 [![Total Downloads](https://img.shields.io/packagist/dt/droath/prism-transformer.svg?style=flat-square)](https://packagist.org/packages/droath/prism-transformer)
 
 A powerful Laravel package for AI-powered content transformation using
-multiple LLM providers.
+multiple LLM providers with direct Laravel Eloquent model integration.
 
-Transform text content and web URLs into structured data
+Transform text content and web URLs into structured data or Laravel models
 using providers such as OpenAI, Anthropic, Groq, and more, with intelligent
-caching and robust error handling.
+caching, automatic schema generation, and robust error handling.
 
 ## Features
 
@@ -23,9 +23,13 @@ caching and robust error handling.
   transformation results
 - **🛠️ Custom Transformers**: Create reusable transformation classes with
   dependency injection
+- **🎯 Laravel Model Output**: Direct transformation to Laravel Eloquent models
+  with automatic schema generation
 - **🔧 Laravel Integration**: Service provider, facades, configuration, and
   Artisan commands
 - **✅ Validation Support**: Built-in Laravel validation integration
+- **🏗️ Service-Oriented Architecture**: Clean separation of concerns with
+  dedicated services
 - **🎯 Error Handling**: Comprehensive exception system with transformation
   context
 - **📊 Performance Optimized**: Efficient algorithms and configurable timeout
@@ -46,6 +50,11 @@ php artisan vendor:publish --tag="prism-transformer-config"
 ```
 
 ## Configuration
+
+### Requirements
+
+- PHP 8.3+
+- Laravel 11.0+ or 12.0+
 
 ### Environment Variables
 
@@ -112,6 +121,46 @@ $result = $transformer
 echo $result->getContent(); // "Transformed: Hello world!"
 ```
 
+### Laravel Model Transformation
+
+Transform content directly into Laravel Eloquent models:
+
+```php
+use Droath\PrismTransformer\PrismTransformer;
+use Droath\PrismTransformer\Abstract\BaseTransformer;
+use Illuminate\Database\Eloquent\Model;
+
+class Contact extends Model
+{
+    protected $fillable = ['name', 'email', 'phone'];
+}
+
+class ContactExtractor extends BaseTransformer
+{
+    public function prompt(): string
+    {
+        return 'Extract contact information from the text as JSON.';
+    }
+
+    protected function outputFormat(): Model
+    {
+        return new Contact();
+    }
+}
+
+$result = (new PrismTransformer())
+    ->text('John Smith, email: john@example.com, phone: (555) 123-4567')
+    ->using(ContactExtractor::class)
+    ->transform();
+
+// Convert directly to Laravel model
+$contact = $result->toModel(Contact::class);
+$contact->save(); // Save to database
+
+echo $contact->name;  // "John Smith"
+echo $contact->email; // "john@example.com"
+```
+
 ### URL Content Transformation
 
 ```php
@@ -166,32 +215,36 @@ if ($result->isSuccessful()) {
 }
 ```
 
-### Data Extraction with Structured Output
+### Data Extraction with Laravel Model Output
+
+Transform content directly into Laravel Eloquent models with automatic schema
+generation:
 
 ```php
 <?php
 
-use Prism\Prism\Schema\ObjectSchema;
-use Prism\Prism\Schema\StringSchema;
+use Illuminate\Database\Eloquent\Model;
 use Droath\PrismTransformer\Abstract\BaseTransformer;
+
+class User extends Model
+{
+    protected $fillable = ['name', 'email', 'phone', 'company'];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+    ];
+}
 
 class ContactExtractor extends BaseTransformer
 {
     public function prompt(): string
     {
-        return 'Extract contact information from the provided text.';
+        return 'Extract contact information from the provided text and structure it as user data.';
     }
 
-    public function outputFormat(ObjectSchema|Model $format = null): ?ObjectSchema
+    protected function outputFormat(): Model
     {
-        return ObjectSchema::create()
-            ->properties([
-                'name' => StringSchema::create()->description('Full name'),
-                'email' => StringSchema::create()->description('Email address'),
-                'phone' => StringSchema::create()->description('Phone number'),
-                'company' => StringSchema::create()->description('Company name'),
-            ])
-            ->required(['name']);
+        return new User();
     }
 }
 ```
@@ -208,8 +261,43 @@ $result = PrismTransformer::text($businessCard)
     ->using($extractor)
     ->transform();
 
-$contactData = $result->getContent();
-// ['name' => 'John Smith', 'email' => 'john.smith@techcorp.com', ...]
+// Convert result directly to Laravel model
+$user = $result->toModel(User::class);
+
+echo $user->name;     // "John Smith"
+echo $user->email;    // "john.smith@techcorp.com"
+echo $user->phone;    // "(555) 123-4567"
+echo $user->company;  // "TechCorp Inc."
+```
+
+### Traditional Structured Output (Still Supported)
+
+```php
+<?php
+
+use Prism\Prism\Schema\ObjectSchema;
+use Prism\Prism\Schema\StringSchema;
+use Droath\PrismTransformer\Abstract\BaseTransformer;
+
+class ContactExtractor extends BaseTransformer
+{
+    public function prompt(): string
+    {
+        return 'Extract contact information from the provided text.';
+    }
+
+    protected function outputFormat(): ?ObjectSchema
+    {
+        return ObjectSchema::create()
+            ->properties([
+                'name' => StringSchema::create()->description('Full name'),
+                'email' => StringSchema::create()->description('Email address'),
+                'phone' => StringSchema::create()->description('Phone number'),
+                'company' => StringSchema::create()->description('Company name'),
+            ])
+            ->required(['name']);
+    }
+}
 ```
 
 ## Real-World Examples
@@ -217,13 +305,24 @@ $contactData = $result->getContent();
 ### 1. Blog Post SEO Optimizer
 
 ```php
+use Droath\PrismTransformer\Abstract\BaseTransformer;
+use Droath\PrismTransformer\Enums\Provider;
+use Droath\PrismTransformer\Services\ConfigurationService;
+use Droath\PrismTransformer\Services\ModelSchemaService;
+use Droath\PrismTransformer\Facades\PrismTransformer;
+use Illuminate\Cache\CacheManager;
+
 class SEOOptimizer extends BaseTransformer
 {
     private array $keywords;
 
-    public function __construct(CacheManager $cache, ConfigurationService $config, array $keywords = [])
-    {
-        parent::__construct($cache, $config);
+    public function __construct(
+        CacheManager $cache,
+        ConfigurationService $configuration,
+        ModelSchemaService $modelSchemaService,
+        array $keywords = []
+    ) {
+        parent::__construct($cache, $configuration, $modelSchemaService);
         $this->keywords = $keywords;
     }
 
@@ -231,39 +330,60 @@ class SEOOptimizer extends BaseTransformer
     {
         $keywordsList = implode(', ', $this->keywords);
         return "Optimize the following blog post for SEO. Target keywords: {$keywordsList}.
-                Ensure natural keyword integration while maintaining readability.";
+                Ensure natural keyword integration while maintaining readability.
+                Improve meta descriptions, headings, and overall content structure for better search engine ranking.";
     }
 
-    private function calculateSEOScore(string $content): float
+    protected function provider(): Provider
     {
-        // Simple SEO scoring logic
-        $score = 0;
-        foreach ($this->keywords as $keyword) {
-            $density = substr_count(strtolower($content), strtolower($keyword));
-            $score += min($density * 10, 100); // Cap at 100 per keyword
-        }
-        return min($score / count($this->keywords), 100);
+        return Provider::OPENAI; // Use OpenAI for content optimization
+    }
+
+    protected function model(): string
+    {
+        return 'gpt-4o-mini'; // Good balance of quality and cost for content work
+    }
+
+    protected function temperature(): ?float
+    {
+        return 0.3; // Lower temperature for more consistent, focused output
     }
 }
 
-// Usage
-$optimizer = new SEOOptimizer(
-    app('cache'),
-    app(ConfigurationService::class),
-    ['Laravel', 'PHP', 'web development']
-);
-
+// Usage - Optimizing a blog post from a URL
 $result = PrismTransformer::url('https://blog.example.com/laravel-tips')
-    ->using($optimizer)
+    ->using(new SEOOptimizer(
+        app(CacheManager::class),
+        app(ConfigurationService::class),
+        app(ModelSchemaService::class),
+        ['Laravel', 'PHP', 'web development', 'framework']
+    ))
     ->transform();
 
 if ($result->isSuccessful()) {
     $optimizedPost = $result->getContent();
-    $seoData = $result->getMetadata()->toArray();
+    $metadata = $result->getMetadata();
 
-    echo "SEO Score: {$seoData['optimization_score']}%\n";
-    echo "Word Count: {$seoData['word_count']}\n";
+    echo "Optimization completed successfully!\n";
+    echo "Provider: {$metadata?->provider->value}\n";
+    echo "Model: {$metadata?->model}\n";
+    echo "Content length: " . strlen($optimizedPost) . " characters\n";
+
+    // Save the optimized content
+    file_put_contents('optimized-post.md', $optimizedPost);
+} else {
+    echo "SEO optimization failed:\n";
+    foreach ($result->getErrors() as $error) {
+        echo "- {$error}\n";
+    }
 }
+
+// Alternative: Direct text optimization
+$blogContent = "Your existing blog post content here...";
+
+$result = PrismTransformer::text($blogContent)
+    ->using(SEOOptimizer::class) // Can also use class name for auto-resolution
+    ->transform();
 ```
 
 ### 2. Multi-Language Content Translator
@@ -273,11 +393,12 @@ class ContentTranslator extends BaseTransformer
 {
     public function __construct(
         CacheManager $cache,
-        ConfigurationService $config,
+        ConfigurationService $configuration,
+        ModelSchemaService $modelSchemaService,
         private string $targetLanguage = 'Spanish',
         private bool $maintainFormatting = true
     ) {
-        parent::__construct($cache, $config);
+        parent::__construct($cache, $configuration, $modelSchemaService);
     }
 
     public function prompt(): string
@@ -289,29 +410,16 @@ class ContentTranslator extends BaseTransformer
                 Ensure cultural appropriateness and natural language flow. {$formatInstruction}";
     }
 
-    protected function performTransformation(string $content): TransformerResult
+    protected function model(): string
     {
-        // Use a specialized model for translation
-        $prism = Prism::text()
-            ->using($this->provider()->value, 'gpt-4o') // Use more capable model
-            ->withPrompt($this->prompt())
-            ->withTemperature(0.3) // Lower temperature for more consistent translations
-            ->withMaxTokens(4000);
+        // Use a more capable model for translation tasks
+        return 'gpt-4o';
+    }
 
-        try {
-            $translatedContent = $prism->generate($content);
-
-            $metadata = TransformerMetadata::create([
-                'source_language' => $this->detectLanguage($content),
-                'target_language' => $this->targetLanguage,
-                'character_count' => strlen($translatedContent),
-                'maintains_formatting' => $this->maintainFormatting,
-            ]);
-
-            return TransformerResult::successful($translatedContent, $metadata);
-        } catch (\Exception $e) {
-            return TransformerResult::failed("Translation failed: {$e->getMessage()}");
-        }
+    protected function temperature(): ?float
+    {
+        // Lower temperature for more consistent translations
+        return 0.3;
     }
 
     private function detectLanguage(string $content): string
@@ -321,91 +429,78 @@ class ContentTranslator extends BaseTransformer
     }
 }
 
-// Usage with caching benefits
+// Usage with caching benefits - dependency injection handles constructor parameters
+$result = PrismTransformer::url('https://company.com/about')
+    ->using(ContentTranslator::class)
+    ->transform();
+
+// Or create instance manually for custom parameters
 $translator = new ContentTranslator(
-    app('cache'),
+    app(CacheManager::class),
     app(ConfigurationService::class),
+    app(ModelSchemaService::class),
     'French',
     true
 );
 
-// This will use cached result if the same URL was translated before
-$result = PrismTransformer::url('https://company.com/about')
+$result = PrismTransformer::text('Hello, how are you today?')
     ->using($translator)
     ->transform();
+
+if ($result->isSuccessful()) {
+    echo $result->getContent(); // "Bonjour, comment allez-vous aujourd'hui ?"
+    $metadata = $result->getMetadata();
+    echo "Model used: " . $metadata->model;
+    echo "Provider: " . $metadata->provider->value;
+}
 ```
 
-### 3. Customer Feedback Analyzer
+### 3. Customer Feedback Analyzer with Laravel Models
+
+Transform customer feedback directly into Laravel models for seamless database
+integration:
 
 ```php
+<?php
+
+use Illuminate\Database\Eloquent\Model;
+use Droath\PrismTransformer\Abstract\BaseTransformer;
+
+class FeedbackAnalysis extends Model
+{
+    protected $fillable = [
+        'sentiment',
+        'sentiment_score',
+        'key_issues',
+        'priority_level',
+        'recommended_actions',
+        'categories',
+        'confidence_level',
+    ];
+
+    protected $casts = [
+        'sentiment_score' => 'float',
+        'key_issues' => 'array',
+        'recommended_actions' => 'array',
+        'categories' => 'array',
+        'confidence_level' => 'float',
+    ];
+}
+
 class FeedbackAnalyzer extends BaseTransformer
 {
     public function prompt(): string
     {
-        return 'Analyze customer feedback and provide structured insights including sentiment, key issues, and recommendations.';
+        return 'Analyze customer feedback and provide structured insights including sentiment, key issues, and recommendations. Format the response as JSON.';
     }
 
-    public function outputFormat(ObjectSchema|Model $format = null): ?ObjectSchema
+    protected function outputFormat(): Model
     {
-        return ObjectSchema::create()
-            ->properties([
-                'sentiment' => StringSchema::create()
-                    ->enum(['positive', 'negative', 'neutral'])
-                    ->description('Overall sentiment'),
-                'sentiment_score' => NumberSchema::create()
-                    ->minimum(-1)
-                    ->maximum(1)
-                    ->description('Sentiment score from -1 to 1'),
-                'key_issues' => ArraySchema::create()
-                    ->items(StringSchema::create())
-                    ->description('List of main issues mentioned'),
-                'priority_level' => StringSchema::create()
-                    ->enum(['low', 'medium', 'high', 'urgent'])
-                    ->description('Priority for addressing feedback'),
-                'recommended_actions' => ArraySchema::create()
-                    ->items(StringSchema::create())
-                    ->description('Suggested actions to address feedback'),
-                'categories' => ArraySchema::create()
-                    ->items(StringSchema::create())
-                    ->description('Categorization of feedback topics'),
-            ])
-            ->required(['sentiment', 'sentiment_score', 'priority_level']);
-    }
-
-    protected function performTransformation(string $content): TransformerResult
-    {
-        $prism = Prism::structured()
-            ->using($this->provider()->value, $this->model())
-            ->withSchema($this->outputFormat())
-            ->withPrompt($this->prompt())
-            ->withTemperature(0.4);
-
-        try {
-            $analysis = $prism->generate($content);
-
-            $metadata = TransformerMetadata::create([
-                'analyzed_at' => now()->toISOString(),
-                'text_length' => strlen($content),
-                'confidence_level' => $this->calculateConfidence($analysis),
-            ]);
-
-            return TransformerResult::successful($analysis, $metadata);
-        } catch (\Exception $e) {
-            return TransformerResult::failed("Feedback analysis failed: {$e->getMessage()}");
-        }
-    }
-
-    private function calculateConfidence(array $analysis): float
-    {
-        // Calculate confidence based on analysis completeness
-        $requiredFields = ['sentiment', 'sentiment_score', 'priority_level'];
-        $completedFields = array_intersect_key($analysis, array_flip($requiredFields));
-
-        return (count($completedFields) / count($requiredFields)) * 100;
+        return new FeedbackAnalysis();
     }
 }
 
-// Batch process multiple feedback entries
+// Usage - Process feedback and save to database
 $analyzer = app(FeedbackAnalyzer::class);
 $feedbackEntries = [
     "Product quality has declined significantly. Very disappointed!",
@@ -419,13 +514,116 @@ foreach ($feedbackEntries as $feedback) {
         ->transform();
 
     if ($result->isSuccessful()) {
-        $analysis = $result->getContent();
-        echo "Sentiment: {$analysis['sentiment']} (Score: {$analysis['sentiment_score']})\n";
-        echo "Priority: {$analysis['priority_level']}\n";
-        echo "Actions: " . implode(', ', $analysis['recommended_actions']) . "\n\n";
+        // Convert to model with validation
+        $validationRules = [
+            'sentiment' => 'required|in:positive,negative,neutral',
+            'sentiment_score' => 'required|numeric|between:-1,1',
+            'priority_level' => 'required|in:low,medium,high,urgent',
+        ];
+
+        $analysis = $result->toModel(FeedbackAnalysis::class, $validationRules);
+
+        // Save to database
+        $analysis->save();
+
+        echo "Sentiment: {$analysis->sentiment} (Score: {$analysis->sentiment_score})\n";
+        echo "Priority: {$analysis->priority_level}\n";
+        echo "Saved analysis with ID: {$analysis->id}\n\n";
     }
 }
 ```
+
+## Laravel Model Integration
+
+The package provides first-class Laravel Eloquent model integration, allowing
+you to transform AI responses directly into model instances with automatic
+schema generation and validation.
+
+### Model Output Format
+
+Use the `outputFormat()` method in your transformers to specify a Laravel model
+as the expected output:
+
+```php
+<?php
+
+use Illuminate\Database\Eloquent\Model;
+use Droath\PrismTransformer\Abstract\BaseTransformer;
+
+class Product extends Model
+{
+    protected $fillable = ['name', 'price', 'category', 'description', 'in_stock'];
+
+    protected $casts = [
+        'price' => 'decimal:2',
+        'in_stock' => 'boolean',
+    ];
+}
+
+class ProductExtractor extends BaseTransformer
+{
+    public function prompt(): string
+    {
+        return 'Extract product information from the text and format it as structured data.';
+    }
+
+    protected function outputFormat(): Model
+    {
+        return new Product();
+    }
+}
+```
+
+### Schema Generation
+
+The `ModelSchemaService` automatically converts Laravel model definitions into
+Prism schemas:
+
+- **Fillable attributes** become schema properties
+- **Model casts** determine the appropriate schema types
+- **Type mapping** handles Laravel cast types to Prism schema types
+
+Supported Laravel cast types:
+
+- `string` → `StringSchema`
+- `integer`, `int` → `NumberSchema`
+- `float`, `double`, `decimal` → `NumberSchema`
+- `boolean`, `bool` → `BooleanSchema`
+- `array`, `json` → `ArraySchema`
+- `collection` → `ArraySchema`
+- `date`, `datetime`, `timestamp` → `StringSchema` (with ISO 8601 format)
+
+### Model Hydration
+
+Transform results can be converted directly to model instances using the
+`toModel()` method:
+
+```php
+$result = PrismTransformer::text($productDescription)
+    ->using(ProductExtractor::class)
+    ->transform();
+
+// Convert to model with optional validation
+$product = $result->toModel(Product::class, [
+    'name' => 'required|string|max:255',
+    'price' => 'required|numeric|min:0',
+    'category' => 'required|string',
+    'in_stock' => 'required|boolean',
+]);
+
+// Save to database
+$product->save();
+```
+
+### Service-Oriented Architecture
+
+The model integration uses a clean service-oriented approach:
+
+- **`ModelSchemaService`**: Handles model-to-schema conversion and data-to-model
+  hydration
+- **Separation of concerns**: Model logic is isolated from transformation logic
+- **Dependency injection**: Services are injected via Laravel's container
+- **Testability**: Services can be easily mocked and tested independently
 
 ## Caching System
 
@@ -533,6 +731,9 @@ vendor/bin/pest --coverage
 
 ```php
 use Droath\PrismTransformer\PrismTransformer;
+use Prism\Prism\Prism;
+use Prism\Prism\Testing\StructuredResponseFake;
+use Prism\Prism\ValueObjects\Usage;
 use Tests\TestCase;
 
 class ArticleSummarizerTest extends TestCase
@@ -551,6 +752,43 @@ class ArticleSummarizerTest extends TestCase
         expect($result->isSuccessful())->toBeTrue();
         expect($result->getContent())->toBeString();
         expect(strlen($result->getContent()))->toBeLessThan(strlen($content));
+    }
+
+    public function test_transforms_to_model_with_validation()
+    {
+        // Mock the AI response
+        $fakeResponse = StructuredResponseFake::make()
+            ->withStructured([
+                'name' => 'John Doe',
+                'email' => 'john@example.com',
+                'age' => 30,
+                'is_active' => true
+            ])
+            ->withUsage(new Usage(10, 20));
+
+        Prism::fake([$fakeResponse]);
+
+        $transformer = app(UserExtractor::class);
+
+        $result = (new PrismTransformer())
+            ->text('Extract user: John Doe, email john@example.com, age 30, active')
+            ->using($transformer)
+            ->transform();
+
+        expect($result->isSuccessful())->toBeTrue();
+
+        // Test model conversion with validation
+        $user = $result->toModel(User::class, [
+            'name' => 'required|string',
+            'email' => 'required|email',
+            'age' => 'required|integer|min:18'
+        ]);
+
+        expect($user)->toBeInstanceOf(User::class);
+        expect($user->name)->toBe('John Doe');
+        expect($user->email)->toBe('john@example.com');
+        expect($user->age)->toBe(30);
+        expect($user->is_active)->toBeTrue();
     }
 }
 ```
@@ -627,7 +865,7 @@ this package.
 
 ## Security
 
-If you discover any security-related issues, please email security@example.com
+If you discover any security-related issues, please contact us directly
 instead of using the issue tracker.
 
 ## Credits
