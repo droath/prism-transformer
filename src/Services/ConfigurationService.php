@@ -201,13 +201,82 @@ class ConfigurationService
     }
 
     /**
-     * Get async queue name for transformations.
+     * Get an async queue name for transformations.
      *
-     * @return string The queue name.
+     * @return string|null The queue name.
      */
-    public function getAsyncQueue(): string
+    public function getAsyncQueue(): ?string
     {
         return config('prism-transformer.transformation.async_queue', 'default');
+    }
+
+    /**
+     * Get queue connection for transformations.
+     *
+     * @return string|null The queue connection name, or null to use default.
+     */
+    public function getQueueConnection(): ?string
+    {
+        return config('prism-transformer.transformation.queue_connection');
+    }
+
+    /**
+     * Get effective queue connection (package config or Laravel default).
+     *
+     * @return string The effective queue connection name.
+     */
+    public function getEffectiveQueueConnection(): string
+    {
+        return $this->getQueueConnection() ?? config('queue.default', 'sync');
+    }
+
+    /**
+     * Get job timeout for transformations.
+     *
+     * @return int The timeout in seconds.
+     */
+    public function getTimeout(): int
+    {
+        return (int) config('prism-transformer.transformation.timeout', 60);
+    }
+
+    /**
+     * Get job retry attempts for transformations.
+     *
+     * @return int The number of retry attempts.
+     */
+    public function getTries(): int
+    {
+        return (int) config('prism-transformer.transformation.tries', 3);
+    }
+
+    /**
+     * Get rate limiting configuration.
+     *
+     * @return array<string, mixed> The rate-limiting configuration.
+     */
+    public function getRateLimitConfig(): array
+    {
+        $defaults = [
+            'enabled' => true,
+            'max_attempts' => 60,
+            'decay_minutes' => 1,
+            'key_prefix' => 'prism_rate_limit',
+        ];
+
+        $config = config('prism-transformer.rate_limiting', []);
+
+        return array_merge($defaults, $config);
+    }
+
+    /**
+     * Check if rate limiting is enabled.
+     *
+     * @return bool True if rate limiting is enabled, false otherwise.
+     */
+    public function isRateLimitingEnabled(): bool
+    {
+        return (bool) config('prism-transformer.rate_limiting.enabled', true);
     }
 
     /**
@@ -240,6 +309,7 @@ class ConfigurationService
             'content_fetcher',
             'transformation',
             'cache',
+            'rate_limiting',
         ];
 
         foreach ($requiredSections as $section) {

@@ -13,7 +13,7 @@ use Illuminate\Validation\ValidationException;
 
 describe('Model Pipeline Error Handling and Edge Cases', function () {
     beforeEach(function () {
-        $this->transformer = new PrismTransformer();
+        $this->transformer = app(PrismTransformer::class);
         $this->cacheManager = $this->app->make(\Illuminate\Cache\CacheManager::class);
         $this->configurationService = $this->app->make(\Droath\PrismTransformer\Services\ConfigurationService::class);
     });

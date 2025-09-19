@@ -27,18 +27,18 @@ abstract class BaseContentFetcher implements ContentFetcherInterface
     /**
      * {@inheritDoc}
      */
-    public function fetch(string $url): string
+    public function fetch(string $url, array $options = []): string
     {
         // Check cache first
-        if ($cachedContent = $this->getCache($url)) {
+        if ($cachedContent = $this->getCache($url, $options)) {
             return $cachedContent;
         }
 
         // Perform the actual fetch operation
-        $content = $this->performFetch($url);
+        $content = $this->performFetch($url, $options);
 
         // Cache successful response
-        $this->setCache($url, $content);
+        $this->setCache($url, $content, $options);
 
         return $content;
     }
@@ -50,19 +50,21 @@ abstract class BaseContentFetcher implements ContentFetcherInterface
      * to define their specific fetching logic (HTTP, file, database, etc.).
      *
      * @param string $url The URL or identifier to fetch content from
+     * @param array $options Custom options for the fetch operation
      *
      * @return string The fetched content as a string
      *
      * @throws \Throwable When content cannot be fetched
      */
-    abstract protected function performFetch(string $url): string;
+    abstract protected function performFetch(string $url, array $options = []): string;
 
     /**
-     * Generate a cache key for the given URL.
+     * Generate a cache key for the given URL and options.
      */
-    protected function cacheId(string $url): string
+    protected function cacheId(string $url, array $options = []): string
     {
-        return hash('sha256', $url);
+        $data = $url . serialize($options);
+        return hash('sha256', $data);
     }
 
     /**

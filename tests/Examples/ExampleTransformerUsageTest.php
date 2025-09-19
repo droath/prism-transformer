@@ -195,7 +195,7 @@ class ExampleTransformerUsageTest extends TransformerTestCase
 
         $customFetcher = $this->createMockContentFetcher($customContent);
 
-        $result = (new PrismTransformer())
+        $result = (app(PrismTransformer::class))
             ->url($url, $customFetcher)
             ->using($this->createMockTransformer('Processed: '.$customContent))
             ->transform();

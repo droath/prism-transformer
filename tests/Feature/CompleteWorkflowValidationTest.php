@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 
 describe('Complete Workflow Validation', function () {
     beforeEach(function () {
-        $this->transformer = new PrismTransformer();
+        $this->transformer = app(PrismTransformer::class);
         $this->modelSchemaService = app(ModelSchemaService::class);
         $this->cacheManager = $this->app->make(\Illuminate\Cache\CacheManager::class);
         $this->configurationService = $this->app->make(\Droath\PrismTransformer\Services\ConfigurationService::class);
@@ -204,7 +204,7 @@ describe('Complete Workflow Validation', function () {
                 }
             };
 
-            $profileResult = (new PrismTransformer())
+            $profileResult = (app(PrismTransformer::class))
                 ->text('Profile: Sequential testing profile, website https://sequential.test, age 28')
                 ->using($profileTransformer::class)
                 ->transform();

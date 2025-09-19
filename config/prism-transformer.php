@@ -140,6 +140,9 @@ return [
 
     'transformation' => [
         'async_queue' => env('PRISM_TRANSFORMER_ASYNC_QUEUE', 'default'),
+        'queue_connection' => env('PRISM_TRANSFORMER_QUEUE_CONNECTION'),
+        'timeout' => env('PRISM_TRANSFORMER_TIMEOUT', 60),
+        'tries' => env('PRISM_TRANSFORMER_TRIES', 3),
     ],
 
     /*
@@ -161,5 +164,22 @@ return [
             'content_fetch' => env('PRISM_TRANSFORMER_CACHE_TTL_CONTENT', 1800), // 30 minutes
             'transformer_data' => env('PRISM_TRANSFORMER_CACHE_TTL_TRANSFORMATIONS', 3600), // 1 hour
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Rate Limiting Settings
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for rate limiting transformation requests to prevent
+    | system overload and ensure fair usage across users and applications.
+    |
+    */
+
+    'rate_limiting' => [
+        'enabled' => env('PRISM_RATE_LIMITING_ENABLED', false),
+        'max_attempts' => env('PRISM_RATE_LIMIT_ATTEMPTS', 60),
+        'decay_minutes' => env('PRISM_RATE_LIMIT_DECAY', 1),
+        'key_prefix' => env('PRISM_RATE_LIMIT_PREFIX', 'prism_rate_limit'),
     ],
 ];

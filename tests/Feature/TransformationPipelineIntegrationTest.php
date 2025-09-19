@@ -7,12 +7,14 @@ use Prism\Prism\ValueObjects\Usage;
 use Prism\Prism\Testing\TextResponseFake;
 use Droath\PrismTransformer\PrismTransformer;
 use Droath\PrismTransformer\Enums\Provider;
+use Droath\PrismTransformer\Jobs\TransformationJob;
 use Droath\PrismTransformer\Services\ConfigurationService;
 use Droath\PrismTransformer\Services\ModelSchemaService;
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
 use Droath\PrismTransformer\ValueObjects\TransformerMetadata;
 use Droath\PrismTransformer\Abstract\BaseTransformer;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Queue;
 use Droath\PrismTransformer\Tests\Stubs\SummarizeTransformer;
 
 describe('Complete Transformation Pipeline Integration', function () {
@@ -27,7 +29,7 @@ describe('Complete Transformation Pipeline Integration', function () {
 
         Prism::fake([$fakeResponse]);
 
-        $response = (new PrismTransformer())
+        $response = (app(PrismTransformer::class))
             ->text('This is my very longer content that I want to summarize.')
             ->using(SummarizeTransformer::class)
             ->transform();
@@ -83,7 +85,7 @@ describe('Complete Transformation Pipeline Integration', function () {
                 }
             };
 
-            $transformer = new PrismTransformer();
+            $transformer = app(PrismTransformer::class);
             $result = $transformer
                 ->text($content)
                 ->using($transformerInterface)
@@ -114,7 +116,7 @@ describe('Complete Transformation Pipeline Integration', function () {
                 }
             };
 
-            $transformer = new PrismTransformer();
+            $transformer = app(PrismTransformer::class);
             $result = $transformer
                 ->url($url)
                 ->using($transformerInterface)
@@ -152,7 +154,7 @@ describe('Complete Transformation Pipeline Integration', function () {
                 }
             };
 
-            $transformer = new PrismTransformer();
+            $transformer = app(PrismTransformer::class);
             $result = $transformer
                 ->text($content)
                 ->using($transformerInterface)
@@ -165,6 +167,7 @@ describe('Complete Transformation Pipeline Integration', function () {
 
         test('async transformation pipeline', function () {
             Config::set('prism-transformer.transformation.async_queue', 'transformations');
+            Queue::fake();
 
             $content = 'Async transformation content';
 
@@ -181,15 +184,18 @@ describe('Complete Transformation Pipeline Integration', function () {
                 }
             };
 
-            $transformer = new PrismTransformer();
-            $result = $transformer
+            $transformer = app(PrismTransformer::class);
+            $transformer
                 ->text($content)
                 ->async()
                 ->using($transformerInterface)
                 ->transform();
 
-            expect($result)->toBeInstanceOf(TransformerResult::class);
-            expect($result->data)->toBe('Async: Async transformation content');
+            Queue::assertPushed(TransformationJob::class, function ($job) {
+                expect($job->transformer)->toBeInstanceOf(BaseTransformer::class);
+
+                return true;
+            });
         });
 
         test('complex chained transformation pipeline', function () {
@@ -224,14 +230,14 @@ describe('Complete Transformation Pipeline Integration', function () {
             };
 
             // First transformation
-            $transformer1 = new PrismTransformer();
+            $transformer1 = app(PrismTransformer::class);
             $result1 = $transformer1
                 ->text($content)
                 ->using($uppercaseTransformer)
                 ->transform();
 
             // Second transformation using result from first
-            $transformer2 = new PrismTransformer();
+            $transformer2 = app(PrismTransformer::class);
             $result2 = $transformer2
                 ->text($result1->data)
                 ->using($prefixTransformer)
@@ -258,7 +264,7 @@ describe('Complete Transformation Pipeline Integration', function () {
                 }
             };
 
-            $transformer = new PrismTransformer();
+            $transformer = app(PrismTransformer::class);
 
             expect(function () use ($transformer, $content, $errorTransformer) {
                 $transformer
@@ -286,7 +292,7 @@ describe('Complete Transformation Pipeline Integration', function () {
                 }
             };
 
-            $transformer = new PrismTransformer();
+            $transformer = app(PrismTransformer::class);
             $result = $transformer
                 ->text('')
                 ->using($transformerInterface)
@@ -299,7 +305,7 @@ describe('Complete Transformation Pipeline Integration', function () {
         test('handles missing transformer gracefully', function () {
             $content = 'Test content';
 
-            $transformer = new PrismTransformer();
+            $transformer = app(PrismTransformer::class);
 
             expect(fn () => $transformer
                 ->text($content)
@@ -329,7 +335,7 @@ describe('Complete Transformation Pipeline Integration', function () {
                 }
             };
 
-            $transformer = new PrismTransformer();
+            $transformer = app(PrismTransformer::class);
             $result = $transformer
                 ->text('Test content')
                 ->using($transformerInterface)
@@ -358,7 +364,7 @@ describe('Complete Transformation Pipeline Integration', function () {
                 }
             };
 
-            $transformer = new PrismTransformer();
+            $transformer = app(PrismTransformer::class);
             $result = $transformer
                 ->text('Test content')
                 ->using($transformerInterface)
@@ -388,7 +394,7 @@ describe('Complete Transformation Pipeline Integration', function () {
                 }
             };
 
-            $transformer = new PrismTransformer();
+            $transformer = app(PrismTransformer::class);
             $result = $transformer
                 ->text('Test content')
                 ->using($transformerInterface)
@@ -443,7 +449,7 @@ describe('Complete Transformation Pipeline Integration', function () {
                 }
             };
 
-            $transformer = new PrismTransformer();
+            $transformer = app(PrismTransformer::class);
             $result = $transformer
                 ->text('Test')
                 ->using($transformerInterface)

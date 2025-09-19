@@ -6,12 +6,14 @@ use Droath\PrismTransformer\PrismTransformer;
 use Droath\PrismTransformer\Contracts\PrismTransformerInterface;
 use Droath\PrismTransformer\Contracts\ContentFetcherInterface;
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Foundation\Bus\PendingDispatch;
 
 use function Pest\Laravel\mock;
 
 describe('PrismTransformer', function () {
     beforeEach(function () {
-        $this->transformer = new PrismTransformer();
+        $this->transformer = app(PrismTransformer::class);
     });
 
     describe('instantiation', function () {
@@ -306,6 +308,308 @@ describe('PrismTransformer', function () {
                 ->transform();
 
             expect($result)->toBe($expectedResult);
+        });
+    });
+
+    describe('async mode detection and routing', function () {
+        test('detects sync mode when async property is false', function () {
+            $closure = fn ($content) => TransformerResult::successful('sync result');
+
+            $result = $this->transformer
+                ->text('test content')
+                ->using($closure)
+                ->transform();
+
+            expect($result)->toBeInstanceOf(TransformerResult::class)
+                ->and($result->data)->toBe('sync result');
+        });
+
+        test('detects async mode when async property is true', function () {
+            Queue::fake();
+
+            $transformer = app(\Droath\PrismTransformer\Tests\Stubs\SummarizeTransformer::class);
+
+            $this->transformer
+                ->text('test content')
+                ->using($transformer)
+                ->async();
+
+            // Access protected property to verify async flag is set
+            $reflection = new ReflectionClass($this->transformer);
+            $asyncProperty = $reflection->getProperty('async');
+            $asyncProperty->setAccessible(true);
+
+            expect($asyncProperty->getValue($this->transformer))->toBeTrue();
+        });
+
+        test('routes to sync execution when async is false', function () {
+            $content = 'test content for sync execution';
+            $closure = fn ($input) => TransformerResult::successful('sync: '.$input);
+
+            $result = $this->transformer
+                ->text($content)
+                ->using($closure)
+                ->transform();
+
+            expect($result)->toBeInstanceOf(TransformerResult::class)
+                ->and($result->data)->toBe('sync: '.$content);
+        });
+
+        test('routes to async execution when async is true', function () {
+            Queue::fake();
+
+            // Test with already instantiated transformer to bypass resolution issues
+            $transformer = new \Droath\PrismTransformer\Tests\Stubs\SimpleAsyncTransformer();
+            $content = 'test content for async execution';
+
+            $result = $this->transformer
+                ->text($content)
+                ->using($transformer)
+                ->async()
+                ->transform();
+
+            // Async execution should return PendingDispatch
+            expect($result)->toBeInstanceOf(PendingDispatch::class);
+        });
+
+        test('maintains backward compatibility for sync execution', function () {
+            $content = 'backward compatibility test';
+            $closure = fn ($input) => TransformerResult::successful('compatible: '.$input);
+
+            // Without calling async(), should work exactly as before
+            $result = $this->transformer
+                ->text($content)
+                ->using($closure)
+                ->transform();
+
+            expect($result)->toBeInstanceOf(TransformerResult::class)
+                ->and($result->data)->toBe('compatible: '.$content);
+        });
+
+        test('async flag can be toggled multiple times', function () {
+            $this->transformer->async();
+
+            $reflection = new ReflectionClass($this->transformer);
+            $asyncProperty = $reflection->getProperty('async');
+            $asyncProperty->setAccessible(true);
+
+            expect($asyncProperty->getValue($this->transformer))->toBeTrue();
+
+            // Call async again
+            $this->transformer->async();
+            expect($asyncProperty->getValue($this->transformer))->toBeTrue();
+        });
+
+        test('async state persists across method chaining', function () {
+            $closure = fn ($content) => TransformerResult::successful($content);
+
+            $result = $this->transformer
+                ->text('test content')
+                ->async()
+                ->using($closure);
+
+            $reflection = new ReflectionClass($this->transformer);
+            $asyncProperty = $reflection->getProperty('async');
+            $asyncProperty->setAccessible(true);
+
+            expect($asyncProperty->getValue($this->transformer))->toBeTrue()
+                ->and($result)->toBe($this->transformer);
+        });
+
+        test('async execution works with different transformer types', function () {
+            Queue::fake();
+
+            // Test with Closure - still returns TransformerResult as closures execute synchronously
+            $closure = fn ($content) => TransformerResult::successful('closure async: '.$content);
+
+            $result1 = $this->transformer
+                ->text('test content')
+                ->using($closure)
+                ->async()
+                ->transform();
+
+            expect($result1)->toBeInstanceOf(TransformerResult::class);
+
+            // Test with TransformerInterface - returns PendingDispatch for async execution
+            $transformer = new \Droath\PrismTransformer\Tests\Stubs\SimpleAsyncTransformer();
+
+            $result2 = app(\Droath\PrismTransformer\PrismTransformer::class)
+                ->text('test content')
+                ->using($transformer)
+                ->async()
+                ->transform();
+
+            expect($result2)->toBeInstanceOf(PendingDispatch::class);
+        });
+    });
+
+    describe('context property integration', function () {
+        test('has default empty context property', function () {
+            $reflection = new ReflectionClass($this->transformer);
+            $contextProperty = $reflection->getProperty('context');
+            $contextProperty->setAccessible(true);
+
+            expect($contextProperty->getValue($this->transformer))->toBe([]);
+        });
+
+        test('setContext method sets context property', function () {
+            $context = ['user_id' => 123, 'tenant_id' => 'acme'];
+
+            $result = $this->transformer->setContext($context);
+
+            $reflection = new ReflectionClass($this->transformer);
+            $contextProperty = $reflection->getProperty('context');
+            $contextProperty->setAccessible(true);
+
+            expect($contextProperty->getValue($this->transformer))->toBe($context)
+                ->and($result)->toBe($this->transformer); // Method chaining
+        });
+
+        test('setContext method returns self for chaining', function () {
+            $context = ['user_id' => 123];
+            $result = $this->transformer->setContext($context);
+
+            expect($result)->toBe($this->transformer);
+        });
+
+        test('context is preserved during method chaining', function () {
+            $context = ['user_id' => 123, 'tenant_id' => 'acme'];
+            $closure = fn ($content) => TransformerResult::successful($content);
+
+            $result = $this->transformer
+                ->text('test content')
+                ->setContext($context)
+                ->async()
+                ->using($closure);
+
+            $reflection = new ReflectionClass($this->transformer);
+            $contextProperty = $reflection->getProperty('context');
+            $contextProperty->setAccessible(true);
+
+            expect($contextProperty->getValue($this->transformer))->toBe($context)
+                ->and($result)->toBe($this->transformer);
+        });
+
+        test('context can be overwritten with new setContext call', function () {
+            $firstContext = ['user_id' => 123];
+            $secondContext = ['user_id' => 456, 'tenant_id' => 'new-tenant'];
+
+            $this->transformer->setContext($firstContext);
+            $this->transformer->setContext($secondContext);
+
+            $reflection = new ReflectionClass($this->transformer);
+            $contextProperty = $reflection->getProperty('context');
+            $contextProperty->setAccessible(true);
+
+            expect($contextProperty->getValue($this->transformer))->toBe($secondContext);
+        });
+
+        test('context accepts empty array', function () {
+            $this->transformer->setContext(['initial' => 'data']);
+            $this->transformer->setContext([]);
+
+            $reflection = new ReflectionClass($this->transformer);
+            $contextProperty = $reflection->getProperty('context');
+            $contextProperty->setAccessible(true);
+
+            expect($contextProperty->getValue($this->transformer))->toBe([]);
+        });
+
+        test('context works with complex data structures', function () {
+            $complexContext = [
+                'user_id' => 123,
+                'tenant_id' => 'acme',
+                'metadata' => [
+                    'source' => 'web',
+                    'features' => ['feature_a', 'feature_b'],
+                ],
+                'preferences' => (object) ['theme' => 'dark'],
+            ];
+
+            $this->transformer->setContext($complexContext);
+
+            $reflection = new ReflectionClass($this->transformer);
+            $contextProperty = $reflection->getProperty('context');
+            $contextProperty->setAccessible(true);
+
+            expect($contextProperty->getValue($this->transformer))->toBe($complexContext);
+        });
+
+        test('context is passed to async jobs', function () {
+            Queue::fake();
+
+            $context = ['user_id' => 123, 'tenant_id' => 'acme'];
+            $transformer = new \Droath\PrismTransformer\Tests\Stubs\SimpleAsyncTransformer();
+
+            $result = $this->transformer
+                ->text('test content')
+                ->setContext($context)
+                ->using($transformer)
+                ->async()
+                ->transform();
+
+            // Verify async execution returns PendingDispatch
+            expect($result)->toBeInstanceOf(PendingDispatch::class);
+
+            // Verify context is preserved in transformer instance
+            $reflection = new ReflectionClass($this->transformer);
+            $contextProperty = $reflection->getProperty('context');
+            $contextProperty->setAccessible(true);
+
+            expect($contextProperty->getValue($this->transformer))->toBe($context);
+        });
+
+        test('async job dispatching with complex context data', function () {
+            Queue::fake();
+
+            $complexContext = [
+                'user_id' => 123,
+                'tenant_id' => 'acme',
+                'metadata' => [
+                    'source' => 'web',
+                    'features' => ['feature_a', 'feature_b'],
+                ],
+                'preferences' => (object) ['theme' => 'dark'],
+            ];
+
+            $transformer = new \Droath\PrismTransformer\Tests\Stubs\SimpleAsyncTransformer();
+
+            $result = $this->transformer
+                ->text('complex test content')
+                ->setContext($complexContext)
+                ->using($transformer)
+                ->async()
+                ->transform();
+
+            expect($result)->toBeInstanceOf(PendingDispatch::class);
+
+            // Verify complex context is preserved in transformer
+            $reflection = new ReflectionClass($this->transformer);
+            $contextProperty = $reflection->getProperty('context');
+            $contextProperty->setAccessible(true);
+
+            expect($contextProperty->getValue($this->transformer))->toBe($complexContext);
+        });
+
+        test('async job dispatching without context uses empty array', function () {
+            Queue::fake();
+
+            $transformer = new \Droath\PrismTransformer\Tests\Stubs\SimpleAsyncTransformer();
+
+            $result = $this->transformer
+                ->text('no context content')
+                ->using($transformer)
+                ->async()
+                ->transform();
+
+            expect($result)->toBeInstanceOf(PendingDispatch::class);
+
+            // Verify default empty context is used
+            $reflection = new ReflectionClass($this->transformer);
+            $contextProperty = $reflection->getProperty('context');
+            $contextProperty->setAccessible(true);
+
+            expect($contextProperty->getValue($this->transformer))->toBe([]);
         });
     });
 

@@ -28,7 +28,7 @@ describe('PrismTransformer Integration', function () {
     describe('UrlTransformerHandler integration', function () {
         test('url method creates UrlTransformerHandler with default BasicHttpFetcher', function () {
             $url = 'https://example.com';
-            $transformer = new PrismTransformer();
+            $transformer = app(PrismTransformer::class);
             $result = $transformer->url($url);
 
             expect($result)->toBe($transformer);
@@ -44,7 +44,7 @@ describe('PrismTransformer Integration', function () {
             $url = 'https://example.com';
             $customFetcher = mock(ContentFetcherInterface::class);
 
-            $transformer = new PrismTransformer();
+            $transformer = app(PrismTransformer::class);
             $result = $transformer->url($url, $customFetcher);
 
             expect($result)->toBe($transformer);
@@ -62,7 +62,7 @@ describe('PrismTransformer Integration', function () {
             $content = 'Hello, world!';
             $transformedContent = 'HELLO, WORLD!';
 
-            $transformer = new PrismTransformer();
+            $transformer = app(PrismTransformer::class);
 
             $closure = function ($input) use ($content, $transformedContent) {
                 expect($input)->toBe($content);
@@ -91,7 +91,7 @@ describe('PrismTransformer Integration', function () {
                 return TransformerResult::successful($transformedContent);
             };
 
-            $transformer = new PrismTransformer();
+            $transformer = app(PrismTransformer::class);
             $result = $transformer
                 ->url($url)
                 ->using($closure)
@@ -106,7 +106,7 @@ describe('PrismTransformer Integration', function () {
             $content = 'Async content';
             $transformedContent = 'Async transformed content';
 
-            $transformer = new PrismTransformer();
+            $transformer = app(PrismTransformer::class);
 
             $closure = function ($input) use ($content, $transformedContent) {
                 expect($input)->toBe($content);
@@ -135,7 +135,7 @@ describe('PrismTransformer Integration', function () {
     describe('String transformer integration', function () {
         test('handles invalid string transformer class', function () {
             $content = 'Test content for string transformer';
-            $transformer = new PrismTransformer();
+            $transformer = app(PrismTransformer::class);
 
             $transformer->text($content)->using('NonExistentTransformerClass');
 
@@ -146,7 +146,7 @@ describe('PrismTransformer Integration', function () {
 
     describe('complex scenarios', function () {
         test('multiple transformations with same instance', function () {
-            $transformer = new PrismTransformer();
+            $transformer = app(PrismTransformer::class);
 
             $uppercaseClosure = fn ($content) => TransformerResult::successful(strtoupper($content));
 
@@ -177,7 +177,7 @@ describe('PrismTransformer Integration', function () {
         });
 
         test('url and text content mixing', function () {
-            $transformer = new PrismTransformer();
+            $transformer = app(PrismTransformer::class);
             $url = 'https://example.com';
 
             $closure = fn ($content) => TransformerResult::successful('Processed: '.$content);
@@ -193,7 +193,7 @@ describe('PrismTransformer Integration', function () {
         });
 
         test('error handling with transformer closure exception', function () {
-            $transformer = new PrismTransformer();
+            $transformer = app(PrismTransformer::class);
 
             $closure = function ($content) {
                 throw new \Exception('Transformation error');
@@ -209,7 +209,7 @@ describe('PrismTransformer Integration', function () {
         });
 
         test('null content handling in complete workflow', function () {
-            $transformer = new PrismTransformer();
+            $transformer = app(PrismTransformer::class);
 
             $closure = function ($content) {
                 if ($content === null) {
@@ -261,7 +261,7 @@ describe('PrismTransformer Integration', function () {
             // Simulate configuration-based transformer selection
             config(['prism-transformer.default_mode' => 'uppercase']);
 
-            $transformer = new PrismTransformer();
+            $transformer = app(PrismTransformer::class);
 
             $configClosure = function ($content) {
                 $mode = config('prism-transformer.default_mode');

@@ -52,7 +52,7 @@ trait TransformerTestingHelpers
      */
     protected function createTransformer(): PrismTransformer
     {
-        return new PrismTransformer();
+        return app(PrismTransformer::class);
     }
 
     /**

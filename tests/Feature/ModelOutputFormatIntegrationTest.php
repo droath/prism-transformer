@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 
 describe('Model OutputFormat Method Integration', function () {
     beforeEach(function () {
-        $this->transformer = new PrismTransformer();
+        $this->transformer = app(PrismTransformer::class);
         $this->modelSchemaService = app(ModelSchemaService::class);
         $this->cacheManager = $this->app->make(\Illuminate\Cache\CacheManager::class);
         $this->configurationService = $this->app->make(\Droath\PrismTransformer\Services\ConfigurationService::class);
@@ -159,7 +159,7 @@ describe('Model OutputFormat Method Integration', function () {
                 }
             };
 
-            $profileResult = (new PrismTransformer())
+            $profileResult = (app(PrismTransformer::class))
                 ->text('Profile data')
                 ->using($profileTransformer::class)
                 ->transform();

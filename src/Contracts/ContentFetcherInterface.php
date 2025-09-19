@@ -18,10 +18,11 @@ interface ContentFetcherInterface
      * Fetch content from the given URL.
      *
      * @param string $url The URL to fetch content from
+     * @param array $options Optional configuration for the fetch operation
      *
      * @return string The fetched content as a string
      *
      * @throws FetchException When content cannot be fetched from the URL
      */
-    public function fetch(string $url): string;
+    public function fetch(string $url, array $options = []): string;
 }

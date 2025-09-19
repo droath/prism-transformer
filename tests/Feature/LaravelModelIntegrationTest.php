@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 
 describe('Laravel Model Integration', function () {
     beforeEach(function () {
-        $this->transformer = new PrismTransformer();
+        $this->transformer = app(PrismTransformer::class);
         $this->cacheManager = $this->app->make(\Illuminate\Cache\CacheManager::class);
         $this->configurationService = $this->app->make(\Droath\PrismTransformer\Services\ConfigurationService::class);
     });
@@ -330,7 +330,7 @@ describe('Laravel Model Integration', function () {
                 }
             };
 
-            $profileResult = (new PrismTransformer())
+            $profileResult = (app(PrismTransformer::class))
                 ->text('Profile: Profile description, website https://profile.com, age 30')
                 ->using($profileTransformer::class)
                 ->transform();

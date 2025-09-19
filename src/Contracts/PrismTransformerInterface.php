@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Droath\PrismTransformer\Contracts;
 
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
+use Illuminate\Foundation\Bus\PendingDispatch;
 
 /**
  * Interface for the main PrismTransformer class.
@@ -112,19 +113,42 @@ interface PrismTransformerInterface
     ): static;
 
     /**
+     * Set context data to be preserved throughout the transformation lifecycle.
+     *
+     * Context data is particularly useful for async processing where you need
+     * to preserve information like user ID, tenant ID, or other metadata that
+     * should be available in events and job handlers.
+     *
+     * @param array $context Associative array of context data
+     *
+     * @return static Returns self for method chaining
+     *
+     * @example
+     * ```php
+     * $transformer->setContext(['user_id' => 123, 'tenant_id' => 'acme'])
+     *     ->text($content)
+     *     ->async()
+     *     ->using($transformer)
+     *     ->transform();
+     * ```
+     */
+    public function setContext(array $context): static;
+
+    /**
      * Execute the transformation with the configured settings.
      *
      * This method triggers the actual transformation process using the content
      * and transformer that have been configured via method chaining. It handles
      * both synchronous and asynchronous execution based on the async() setting.
      *
-     * @return TransformerResult|null The transformation result containing the
-     *                                processed content, metadata, and success status.
-     *                                Returns null if no transformer is configured
-     *                                or if async mode queues the job.
+     * @return TransformerResult|PendingDispatch|null
+     *  The transformation result containing the processed content for sync
+     *  execution, or a PendingDispatch for async execution. Returns null if no
+     *  transformer is configured.
      *
      * @throws \Droath\PrismTransformer\Exceptions\TransformerException When transformation fails
      * @throws \Droath\PrismTransformer\Exceptions\ValidationException When input validation fails
+     * @throws \Droath\PrismTransformer\Exceptions\RateLimitExceededException When the rate limit is exceeded
      *
      * @example Synchronous transformation:
      * ```php
@@ -137,5 +161,5 @@ interface PrismTransformerInterface
      * }
      * ```
      */
-    public function transform(): ?TransformerResult;
+    public function transform(): TransformerResult|PendingDispatch|null;
 }
