@@ -5,7 +5,6 @@ declare(strict_types=1);
 use Droath\PrismTransformer\Services\ConfigurationService;
 use Droath\PrismTransformer\Jobs\TransformationJob;
 use Droath\PrismTransformer\Tests\Stubs\SummarizeTransformer;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
 describe('Queue Configuration', function () {
     beforeEach(function () {

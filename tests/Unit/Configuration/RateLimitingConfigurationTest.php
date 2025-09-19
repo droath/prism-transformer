@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Droath\PrismTransformer\Services\ConfigurationService;
 use Droath\PrismTransformer\Services\RateLimitService;
-use Droath\PrismTransformer\Exceptions\RateLimitExceededException;
 
 describe('Rate Limiting Configuration', function () {
     beforeEach(function () {
