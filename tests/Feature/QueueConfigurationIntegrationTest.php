@@ -171,7 +171,7 @@ describe('Queue Configuration Integration', function () {
             $transformer->text('content 2')->using($transformerInstance)->transform();
 
             // Third request should be rate limited
-            expect(fn() => $transformer->text('content 3')->using($transformerInstance)->transform())
+            expect(fn () => $transformer->text('content 3')->using($transformerInstance)->transform())
                 ->toThrow(RateLimitExceededException::class);
         });
 
