@@ -74,11 +74,11 @@ describe('BasicHttpFetcher Caching', function () {
             {
                 public int $callCount = 0;
 
-                public function fetch(string $url): string
+                public function fetch(string $url, array $options = []): string
                 {
                     $this->callCount++;
 
-                    return parent::fetch($url);
+                    return parent::fetch($url, $options);
                 }
             };
 

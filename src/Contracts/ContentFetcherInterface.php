@@ -22,6 +22,7 @@ interface ContentFetcherInterface
      *
      * @return string The fetched content as a string
      *
+     * @throws \Throwable
      * @throws FetchException When content cannot be fetched from the URL
      */
     public function fetch(string $url, array $options = []): string;

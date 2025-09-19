@@ -23,7 +23,7 @@ describe('BaseContentFetcher', function () {
         test('can be extended to create concrete fetchers', function () {
             $fetcher = new class($this->cacheManager, $this->configurationService) extends BaseContentFetcher
             {
-                protected function performFetch(string $url): string
+                protected function performFetch(string $url, array $options = []): string
                 {
                     return "Fetched content from: {$url}";
                 }
@@ -40,7 +40,7 @@ describe('BaseContentFetcher', function () {
             {
                 public int $callCount = 0;
 
-                protected function performFetch(string $url): string
+                protected function performFetch(string $url, array $options = []): string
                 {
                     $this->callCount++;
 
@@ -60,6 +60,30 @@ describe('BaseContentFetcher', function () {
             expect($fetcher->callCount)->toBe(1); // Should not increment
             expect($result2)->toBe('Content from https://example.com/test');
         });
+
+        test('supports fetch with custom options', function () {
+            Config::set('prism-transformer.cache.enabled', true);
+
+            $fetcher = new class($this->cacheManager, $this->configurationService) extends BaseContentFetcher
+            {
+                public array $lastOptions = [];
+
+                protected function performFetch(string $url, array $options = []): string
+                {
+                    $this->lastOptions = $options;
+
+                    return "Content from {$url} with options";
+                }
+            };
+
+            $url = 'https://example.com/test';
+            $options = ['method' => 'POST', 'headers' => ['Accept' => 'application/json']];
+
+            $result = $fetcher->fetch($url, $options);
+
+            expect($result)->toBe('Content from https://example.com/test with options');
+            expect($fetcher->lastOptions)->toBe($options);
+        });
     });
 
     describe('cache functionality', function () {
@@ -70,7 +94,7 @@ describe('BaseContentFetcher', function () {
             {
                 public int $callCount = 0;
 
-                protected function performFetch(string $url): string
+                protected function performFetch(string $url, array $options = []): string
                 {
                     $this->callCount++;
 
@@ -97,7 +121,7 @@ describe('BaseContentFetcher', function () {
 
             $fetcher = new class($this->cacheManager, $configMock) extends BaseContentFetcher
             {
-                protected function performFetch(string $url): string
+                protected function performFetch(string $url, array $options = []): string
                 {
                     return "Mocked content from {$url}";
                 }
@@ -111,7 +135,7 @@ describe('BaseContentFetcher', function () {
 
             $fetcher = new class($this->cacheManager, $this->configurationService) extends BaseContentFetcher
             {
-                protected function performFetch(string $url): string
+                protected function performFetch(string $url, array $options = []): string
                 {
                     return "Graceful content from {$url}";
                 }
@@ -130,20 +154,20 @@ describe('BaseContentFetcher', function () {
         test('generates consistent cache keys', function () {
             $fetcher = new class($this->cacheManager, $this->configurationService) extends BaseContentFetcher
             {
-                protected function performFetch(string $url): string
+                protected function performFetch(string $url, array $options = []): string
                 {
                     return 'Content';
                 }
 
                 // Expose protected method for testing
-                public function testCacheId(string $url): string
+                public function testCacheId(string $url, array $options = []): string
                 {
-                    return $this->cacheId($url);
+                    return $this->cacheId($url, $options);
                 }
 
-                public function testBuildCacheKey(string $url): string
+                public function testBuildCacheKey(string $url, array $options = []): string
                 {
-                    return $this->buildCacheKey($url);
+                    return $this->buildCacheKey($url, $options);
                 }
             };
 
@@ -166,14 +190,14 @@ describe('BaseContentFetcher', function () {
         test('different URLs generate different cache keys', function () {
             $fetcher = new class($this->cacheManager, $this->configurationService) extends BaseContentFetcher
             {
-                protected function performFetch(string $url): string
+                protected function performFetch(string $url, array $options = []): string
                 {
                     return 'Content';
                 }
 
-                public function testCacheId(string $url): string
+                public function testCacheId(string $url, array $options = []): string
                 {
-                    return $this->cacheId($url);
+                    return $this->cacheId($url, $options);
                 }
             };
 
@@ -185,13 +209,60 @@ describe('BaseContentFetcher', function () {
 
             expect($cacheId1)->not->toBe($cacheId2);
         });
+
+        test('different options generate different cache keys', function () {
+            $fetcher = new class($this->cacheManager, $this->configurationService) extends BaseContentFetcher
+            {
+                protected function performFetch(string $url, array $options = []): string
+                {
+                    return 'Content';
+                }
+
+                public function testCacheId(string $url, array $options = []): string
+                {
+                    return $this->cacheId($url, $options);
+                }
+            };
+
+            $url = 'https://example.com/test';
+            $options1 = ['method' => 'GET'];
+            $options2 = ['method' => 'POST'];
+
+            $cacheId1 = $fetcher->testCacheId($url, $options1);
+            $cacheId2 = $fetcher->testCacheId($url, $options2);
+
+            expect($cacheId1)->not->toBe($cacheId2);
+        });
+
+        test('same URL and options generate same cache key', function () {
+            $fetcher = new class($this->cacheManager, $this->configurationService) extends BaseContentFetcher
+            {
+                protected function performFetch(string $url, array $options = []): string
+                {
+                    return 'Content';
+                }
+
+                public function testCacheId(string $url, array $options = []): string
+                {
+                    return $this->cacheId($url, $options);
+                }
+            };
+
+            $url = 'https://example.com/test';
+            $options = ['method' => 'GET', 'headers' => ['Accept' => 'application/json']];
+
+            $cacheId1 = $fetcher->testCacheId($url, $options);
+            $cacheId2 = $fetcher->testCacheId($url, $options);
+
+            expect($cacheId1)->toBe($cacheId2);
+        });
     });
 
     describe('constructor flexibility', function () {
         test('can be instantiated with minimal parameters', function () {
             $fetcher = new class() extends BaseContentFetcher
             {
-                protected function performFetch(string $url): string
+                protected function performFetch(string $url, array $options = []): string
                 {
                     return "Minimal content from {$url}";
                 }
@@ -207,7 +278,7 @@ describe('BaseContentFetcher', function () {
         test('can be instantiated with full parameters', function () {
             $fetcher = new class($this->cacheManager, $this->configurationService) extends BaseContentFetcher
             {
-                protected function performFetch(string $url): string
+                protected function performFetch(string $url, array $options = []): string
                 {
                     return "Full content from {$url}";
                 }

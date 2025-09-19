@@ -9,6 +9,7 @@ use Droath\PrismTransformer\Exceptions\FetchException;
 use Droath\PrismTransformer\Services\ConfigurationService;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory as HttpFactory;
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Cache\CacheManager;
 use InvalidArgumentException;
 use Psr\Log\LoggerInterface;
@@ -53,7 +54,7 @@ class BasicHttpFetcher extends BaseContentFetcher
     /**
      * {@inheritDoc}
      */
-    protected function performFetch(string $url): string
+    protected function performFetch(string $url, array $options = []): string
     {
         // Sanitize and validate URL format
         $sanitizedUrl = $this->sanitizeUrl($url);
@@ -66,19 +67,31 @@ class BasicHttpFetcher extends BaseContentFetcher
         }
 
         try {
-            $response = $this->httpFactory
-                ->timeout($this->timeout)
-                ->get($sanitizedUrl);
+            // Build HTTP client with options
+            $client = $this->buildHttpClient($options);
+
+            // Determine HTTP method and make request
+            $method = strtolower($options['method'] ?? 'get');
+            $requestData = $options['data'] ?? [];
+
+            $response = match ($method) {
+                'post' => $client->post($sanitizedUrl, $requestData),
+                'put' => $client->put($sanitizedUrl, $requestData),
+                'patch' => $client->patch($sanitizedUrl, $requestData),
+                'delete' => $client->delete($sanitizedUrl),
+                default => empty($requestData) ? $client->get($sanitizedUrl) : $client->get($sanitizedUrl, $requestData),
+            };
 
             if (! $response->successful()) {
                 $this->logger->error('HTTP request failed with status: {status}', [
                     'status' => $response->status(),
                     'url' => $sanitizedUrl,
+                    'method' => $method,
                 ]);
 
                 throw new FetchException(
                     "HTTP request failed with status: {$response->status()}",
-                    context: ['status_code' => $response->status(), 'url' => $sanitizedUrl]
+                    context: ['status_code' => $response->status(), 'url' => $sanitizedUrl, 'method' => $method]
                 );
             }
 
@@ -96,6 +109,73 @@ class BasicHttpFetcher extends BaseContentFetcher
                 context: ['url' => $sanitizedUrl, 'original_error' => $e->getMessage()]
             );
         }
+    }
+
+    /**
+     * Build an HTTP client with custom options.
+     *
+     * @param array $options Options to configure the HTTP client
+     */
+    protected function buildHttpClient(array $options = []): PendingRequest
+    {
+        $client = $this->httpFactory->timeout(
+            $options['timeout'] ?? $this->timeout
+        );
+
+        if (isset($options['auth'])) {
+            if (is_string($options['auth'])) {
+                // Bearer token
+                $client = $client->withToken($options['auth']);
+            }
+
+            if (is_array($options['auth']) && count($options['auth']) >= 2) {
+                // Basic auth with username and password
+                $client = $client->withBasicAuth(
+                    $options['auth'][0],
+                    $options['auth'][1]
+                );
+            }
+        }
+
+        if (
+            isset($options['headers'])
+            && is_array($options['headers'])
+        ) {
+            $client = $client->withHeaders($options['headers']);
+        }
+
+        if (isset($options['user_agent'])) {
+            $client = $client->withUserAgent($options['user_agent']);
+        }
+
+        if (isset($options['cookies']) && is_array($options['cookies'])) {
+            $client = $client->withCookies(
+                $options['cookies'],
+                $options['cookies_domain'] ?? null
+            );
+        }
+
+        if (
+            isset($options['allow_redirects'])
+            && is_bool($options['allow_redirects'])
+        ) {
+            $client = $client->withOptions([
+                'allow_redirects' => $options['allow_redirects'],
+            ]);
+        }
+
+        if (
+            isset($options['guzzle_options'])
+            && is_array($options['guzzle_options'])
+        ) {
+            $client = $client->withOptions($options['guzzle_options']);
+        }
+
+        if (isset($options['verify']) && is_bool($options['verify'])) {
+            $client = $client->withOptions(['verify' => $options['verify']]);
+        }
+
+        return $client;
     }
 
     /**

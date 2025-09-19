@@ -29,15 +29,11 @@ abstract class BaseContentFetcher implements ContentFetcherInterface
      */
     public function fetch(string $url, array $options = []): string
     {
-        // Check cache first
         if ($cachedContent = $this->getCache($url, $options)) {
             return $cachedContent;
         }
-
-        // Perform the actual fetch operation
         $content = $this->performFetch($url, $options);
 
-        // Cache successful response
         $this->setCache($url, $content, $options);
 
         return $content;
@@ -63,40 +59,45 @@ abstract class BaseContentFetcher implements ContentFetcherInterface
      */
     protected function cacheId(string $url, array $options = []): string
     {
-        $data = $url . serialize($options);
+        $data = $url.serialize($options);
+
         return hash('sha256', $data);
     }
 
     /**
-     * Get cached content for the given URL.
+     * Get cached content for the given URL and options.
      */
-    protected function getCache(string $url): ?string
+    protected function getCache(string $url, array $options = []): ?string
     {
         if (! $this->isCacheEnabled()) {
             return null;
         }
 
         try {
-            return $this->getCacheStore()->get($this->buildCacheKey($url));
+            return $this->getCacheStore()->get(
+                $this->buildCacheKey($url, $options)
+            );
         } catch (\Throwable) {
             return null;
         }
     }
 
     /**
-     * Cache content for the given URL.
+     * Cache content for the given URL and options.
      */
-    protected function setCache(string $url, string $content): bool
-    {
+    protected function setCache(
+        string $url,
+        string $content,
+        array $options = []
+    ): bool {
         if (! $this->isCacheEnabled()) {
             return false;
         }
-
-        $ttl = $this->configuration?->getContentFetchCacheTtl() ?? 1800;
+        $ttl = $this->configuration?->getContentFetchCacheTtl();
 
         try {
             return $this->getCacheStore()->put(
-                $this->buildCacheKey($url),
+                $this->buildCacheKey($url, $options),
                 $content,
                 $ttl
             );
@@ -133,10 +134,11 @@ abstract class BaseContentFetcher implements ContentFetcherInterface
     /**
      * Build the cache key with a configured prefix.
      */
-    protected function buildCacheKey(string $url): string
+    protected function buildCacheKey(string $url, array $options = []): string
     {
-        $prefix = $this->configuration?->getCachePrefix() ?? 'prism_transformer';
+        $prefix = $this->configuration?->getCachePrefix()
+            ?? 'prism_transformer';
 
-        return "{$prefix}:content_fetch:{$this->cacheId($url)}";
+        return "{$prefix}:content_fetch:{$this->cacheId($url, $options)}";
     }
 }

@@ -118,6 +118,7 @@ describe('BasicHttpFetcher fetch method', function () {
             ->with('HTTP request failed with status: {status}', [
                 'status' => 404,
                 'url' => $url,
+                'method' => 'get',
             ]);
 
         expect(fn () => $this->fetcher->fetch($url))

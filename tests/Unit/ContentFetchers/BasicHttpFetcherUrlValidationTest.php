@@ -5,11 +5,13 @@ declare(strict_types=1);
 use Droath\PrismTransformer\ContentFetchers\BasicHttpFetcher;
 use Droath\PrismTransformer\Exceptions\FetchException;
 use Illuminate\Http\Client\Factory as HttpFactory;
+use Illuminate\Http\Client\PendingRequest;
 use Psr\Log\LoggerInterface;
 
 describe('BasicHttpFetcher URL Validation and Sanitization', function () {
     beforeEach(function () {
         $this->httpFactory = mock(HttpFactory::class);
+        $this->pendingRequest = mock(PendingRequest::class);
         $this->logger = mock(LoggerInterface::class);
 
         $this->fetcher = new BasicHttpFetcher(
@@ -22,8 +24,8 @@ describe('BasicHttpFetcher URL Validation and Sanitization', function () {
         test('accepts standard HTTP URLs', function ($validUrl) {
             // We're just testing validation here, so we won't mock the HTTP response
             // Instead, we'll let it fail at the HTTP level to confirm URL validation passed
-            $this->httpFactory->shouldReceive('timeout')->andReturn($this->httpFactory);
-            $this->httpFactory->shouldReceive('get')->andThrow(new \Exception('Expected failure'));
+            $this->httpFactory->shouldReceive('timeout')->andReturn($this->pendingRequest);
+            $this->pendingRequest->shouldReceive('get')->andThrow(new \Exception('Expected failure'));
 
             expect(fn () => $this->fetcher->fetch($validUrl))
                 ->toThrow(\Exception::class, 'Expected failure');
@@ -40,8 +42,8 @@ describe('BasicHttpFetcher URL Validation and Sanitization', function () {
         ]);
 
         test('accepts international domain names', function ($internationalUrl) {
-            $this->httpFactory->shouldReceive('timeout')->andReturn($this->httpFactory);
-            $this->httpFactory->shouldReceive('get')->andThrow(new \Exception('Expected failure'));
+            $this->httpFactory->shouldReceive('timeout')->andReturn($this->pendingRequest);
+            $this->pendingRequest->shouldReceive('get')->andThrow(new \Exception('Expected failure'));
 
             expect(fn () => $this->fetcher->fetch($internationalUrl))
                 ->toThrow(\Exception::class, 'Expected failure');
@@ -51,8 +53,8 @@ describe('BasicHttpFetcher URL Validation and Sanitization', function () {
         ]);
 
         test('accepts URLs with special characters in path and query', function ($urlWithSpecialChars) {
-            $this->httpFactory->shouldReceive('timeout')->andReturn($this->httpFactory);
-            $this->httpFactory->shouldReceive('get')->andThrow(new \Exception('Expected failure'));
+            $this->httpFactory->shouldReceive('timeout')->andReturn($this->pendingRequest);
+            $this->pendingRequest->shouldReceive('get')->andThrow(new \Exception('Expected failure'));
 
             expect(fn () => $this->fetcher->fetch($urlWithSpecialChars))
                 ->toThrow(\Exception::class, 'Expected failure');
@@ -107,8 +109,8 @@ describe('BasicHttpFetcher URL Validation and Sanitization', function () {
             $longPath = str_repeat('a', 2000);
             $longUrl = "https://example.com/{$longPath}";
 
-            $this->httpFactory->shouldReceive('timeout')->andReturn($this->httpFactory);
-            $this->httpFactory->shouldReceive('get')->andThrow(new \Exception('Expected failure'));
+            $this->httpFactory->shouldReceive('timeout')->andReturn($this->pendingRequest);
+            $this->pendingRequest->shouldReceive('get')->andThrow(new \Exception('Expected failure'));
 
             expect(fn () => $this->fetcher->fetch($longUrl))
                 ->toThrow(\Exception::class, 'Expected failure');
@@ -127,8 +129,8 @@ describe('BasicHttpFetcher URL Validation and Sanitization', function () {
         test('handles URLs with percent-encoded characters correctly', function () {
             $encodedUrl = 'https://example.com/search?q=hello%20world&type=json';
 
-            $this->httpFactory->shouldReceive('timeout')->andReturn($this->httpFactory);
-            $this->httpFactory->shouldReceive('get')->andThrow(new \Exception('Expected failure'));
+            $this->httpFactory->shouldReceive('timeout')->andReturn($this->pendingRequest);
+            $this->pendingRequest->shouldReceive('get')->andThrow(new \Exception('Expected failure'));
 
             expect(fn () => $this->fetcher->fetch($encodedUrl))
                 ->toThrow(\Exception::class, 'Expected failure');
@@ -137,16 +139,16 @@ describe('BasicHttpFetcher URL Validation and Sanitization', function () {
         test('preserves case sensitivity in URLs', function () {
             $caseSensitiveUrl = 'https://Example.COM/Path/To/Resource';
 
-            $this->httpFactory->shouldReceive('timeout')->andReturn($this->httpFactory);
-            $this->httpFactory->shouldReceive('get')->andThrow(new \Exception('Expected failure'));
+            $this->httpFactory->shouldReceive('timeout')->andReturn($this->pendingRequest);
+            $this->pendingRequest->shouldReceive('get')->andThrow(new \Exception('Expected failure'));
 
             expect(fn () => $this->fetcher->fetch($caseSensitiveUrl))
                 ->toThrow(\Exception::class, 'Expected failure');
         });
 
         test('validates IP addresses in URLs', function ($ipUrl) {
-            $this->httpFactory->shouldReceive('timeout')->andReturn($this->httpFactory);
-            $this->httpFactory->shouldReceive('get')->andThrow(new \Exception('Expected failure'));
+            $this->httpFactory->shouldReceive('timeout')->andReturn($this->pendingRequest);
+            $this->pendingRequest->shouldReceive('get')->andThrow(new \Exception('Expected failure'));
 
             expect(fn () => $this->fetcher->fetch($ipUrl))
                 ->toThrow(\Exception::class, 'Expected failure');
@@ -158,8 +160,8 @@ describe('BasicHttpFetcher URL Validation and Sanitization', function () {
         ]);
 
         test('handles IPv6 addresses in URLs', function ($ipv6Url) {
-            $this->httpFactory->shouldReceive('timeout')->andReturn($this->httpFactory);
-            $this->httpFactory->shouldReceive('get')->andThrow(new \Exception('Expected failure'));
+            $this->httpFactory->shouldReceive('timeout')->andReturn($this->pendingRequest);
+            $this->pendingRequest->shouldReceive('get')->andThrow(new \Exception('Expected failure'));
 
             expect(fn () => $this->fetcher->fetch($ipv6Url))
                 ->toThrow(\Exception::class, 'Expected failure');
@@ -182,8 +184,8 @@ describe('BasicHttpFetcher URL Validation and Sanitization', function () {
             ];
 
             foreach ($urls as $url) {
-                $this->httpFactory->shouldReceive('timeout')->andReturn($this->httpFactory);
-                $this->httpFactory->shouldReceive('get')->andThrow(new \Exception('Expected failure'));
+                $this->httpFactory->shouldReceive('timeout')->andReturn($this->pendingRequest);
+                $this->pendingRequest->shouldReceive('get')->andThrow(new \Exception('Expected failure'));
 
                 expect(fn () => $this->fetcher->fetch($url))
                     ->toThrow(\Exception::class, 'Expected failure');

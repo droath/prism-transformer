@@ -110,6 +110,7 @@ describe('BasicHttpFetcher Error Scenarios', function () {
                 ->with('HTTP request failed with status: {status}', [
                     'status' => 404,
                     'url' => $url,
+                    'method' => 'get',
                 ]);
 
             expect(fn () => $this->fetcher->fetch($url))
@@ -137,6 +138,7 @@ describe('BasicHttpFetcher Error Scenarios', function () {
                 ->with('HTTP request failed with status: {status}', [
                     'status' => 500,
                     'url' => $url,
+                    'method' => 'get',
                 ]);
 
             expect(fn () => $this->fetcher->fetch($url))
@@ -164,6 +166,7 @@ describe('BasicHttpFetcher Error Scenarios', function () {
                 ->with('HTTP request failed with status: {status}', [
                     'status' => 403,
                     'url' => $url,
+                    'method' => 'get',
                 ]);
 
             expect(fn () => $this->fetcher->fetch($url))

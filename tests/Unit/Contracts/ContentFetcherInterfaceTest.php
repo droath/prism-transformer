@@ -17,13 +17,21 @@ describe('ContentFetcherInterface Contract', function () {
         $reflection = new ReflectionClass(ContentFetcherInterface::class);
         $method = $reflection->getMethod('fetch');
 
-        expect($method->getParameters())->toHaveCount(1);
-        expect($method->getParameters()[0]->getName())->toBe('url');
+        expect($method->getParameters())->toHaveCount(2);
 
-        // Check parameter type is string
-        $paramType = $method->getParameters()[0]->getType();
-        expect($paramType)->not->toBeNull();
-        expect($paramType->getName())->toBe('string');
+        // Check first parameter (url)
+        expect($method->getParameters()[0]->getName())->toBe('url');
+        $urlParamType = $method->getParameters()[0]->getType();
+        expect($urlParamType)->not->toBeNull();
+        expect($urlParamType->getName())->toBe('string');
+
+        // Check second parameter (options)
+        expect($method->getParameters()[1]->getName())->toBe('options');
+        expect($method->getParameters()[1]->isOptional())->toBeTrue();
+        expect($method->getParameters()[1]->getDefaultValue())->toBe([]);
+        $optionsParamType = $method->getParameters()[1]->getType();
+        expect($optionsParamType)->not->toBeNull();
+        expect($optionsParamType->getName())->toBe('array');
 
         // Check return type is string
         $returnType = $method->getReturnType();
@@ -45,7 +53,7 @@ describe('ContentFetcherInterface Implementation Contract', function () {
     beforeEach(function () {
         $this->fetcher = new class implements ContentFetcherInterface
         {
-            public function fetch(string $url): string
+            public function fetch(string $url, array $options = []): string
             {
                 if ($url === 'invalid-url') {
                     throw new FetchException('Failed to fetch content from source');

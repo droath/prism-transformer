@@ -136,7 +136,7 @@ trait TransformerTestingHelpers
                 private bool $shouldFail
             ) {}
 
-            public function fetch(string $url): string
+            public function fetch(string $url, array $options = []): string
             {
                 if ($this->shouldFail) {
                     throw new \Droath\PrismTransformer\Exceptions\FetchException("Mock fetch failed for: $url");
