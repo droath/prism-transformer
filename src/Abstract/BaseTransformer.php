@@ -241,6 +241,43 @@ abstract class BaseTransformer implements TransformerInterface
     }
 
     /**
+     * Define the HTTP client timeout setting for LLM requests.
+     *
+     * Override this method in concrete transformers to set a specific timeout
+     * value that controls how long the HTTP client will wait for a response
+     * from the LLM provider before timing out. This setting affects the total
+     * time allowed for the request to complete, including processing time.
+     *
+     * Returning null will use the default timeout from the package configuration.
+     *
+     * @return int|null
+     *   The timeout value in seconds or null for configuration default
+     */
+    protected function timeout(): ?int
+    {
+        return null;
+    }
+
+    /**
+     * Define the HTTP client connect timeout setting for LLM requests.
+     *
+     * Override this method in concrete transformers to set a specific connect
+     * timeout value that controls how long the HTTP client will wait when
+     * establishing a connection to the LLM provider before timing out. This
+     * setting only affects the initial connection establishment phase.
+     *
+     * Returning null will use the default connect timeout from the package
+     * configuration.
+     *
+     * @return int|null
+     *   The connect timeout value in seconds or null for configuration default
+     */
+    protected function connectTimeout(): ?int
+    {
+        return null;
+    }
+
+    /**
      * Define the system prompt message for LLM context setting.
      *
      * Override this method in concrete transformers to provide system-level
@@ -392,6 +429,10 @@ abstract class BaseTransformer implements TransformerInterface
                 $this->structureMessages($content)
             );
 
+        if ($clientOptions = $this->resolveClientOptions()) {
+            $resource->withClientOptions($clientOptions);
+        }
+
         if ($topP = $this->topP()) {
             $resource->usingTopP($topP);
         }
@@ -446,6 +487,36 @@ abstract class BaseTransformer implements TransformerInterface
     {
         return $this->temperature()
             ?? $this->provider()->getConfigValue('temperature');
+    }
+
+    /**
+     * Resolve the HTTP client options for the transformer.
+     *
+     * Builds an array of client options from transformer-specific settings
+     * or falls back to configuration defaults. Only includes options that
+     * have valid values (timeout > 0).
+     *
+     * @return array<string, mixed>|null The client options array or null if no options
+     */
+    protected function resolveClientOptions(): ?array
+    {
+        $options = [];
+
+        $timeout = $this->timeout()
+            ?? $this->configuration->getClientTimeout();
+
+        if ($timeout > 0) {
+            $options['timeout'] = $timeout;
+        }
+
+        $connectTimeout = $this->connectTimeout()
+            ?? $this->configuration->getClientConnectTimeout();
+
+        if ($connectTimeout > 0) {
+            $options['connect_timeout'] = $connectTimeout;
+        }
+
+        return ! empty($options) ? $options : null;
     }
 
     /**

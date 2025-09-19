@@ -143,6 +143,11 @@ return [
         'queue_connection' => env('PRISM_TRANSFORMER_QUEUE_CONNECTION'),
         'timeout' => env('PRISM_TRANSFORMER_TIMEOUT', 60),
         'tries' => env('PRISM_TRANSFORMER_TRIES', 3),
+
+        'client_options' => [
+            'timeout' => env('PRISM_TRANSFORMER_CLIENT_TIMEOUT', 180),
+            'connect_timeout' => env('PRISM_TRANSFORMER_CLIENT_CONNECT_TIMEOUT', 0),
+        ],
     ],
 
     /*

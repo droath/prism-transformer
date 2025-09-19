@@ -278,6 +278,100 @@ describe('ConfigurationService', function () {
         });
     });
 
+    describe('client timeout configuration methods', function () {
+        test('can get client timeout from configuration', function () {
+            Config::set('prism-transformer.transformation.client_options.timeout', 300);
+
+            $timeout = $this->configService->getClientTimeout();
+
+            expect($timeout)->toBe(300);
+        });
+
+        test('can get client connect timeout from configuration', function () {
+            Config::set('prism-transformer.transformation.client_options.connect_timeout', 20);
+
+            $connectTimeout = $this->configService->getClientConnectTimeout();
+
+            expect($connectTimeout)->toBe(20);
+        });
+
+        test('returns default timeout when configuration is missing', function () {
+            // Clear the entire transformation config to test fallback
+            Config::set('prism-transformer.transformation', []);
+
+            $timeout = $this->configService->getClientTimeout();
+
+            expect($timeout)->toBe(180); // Default value
+        });
+
+        test('returns default connect timeout when configuration is missing', function () {
+            // Clear the entire transformation config to test fallback
+            Config::set('prism-transformer.transformation', []);
+
+            $connectTimeout = $this->configService->getClientConnectTimeout();
+
+            expect($connectTimeout)->toBe(0); // Default value changed to 0
+        });
+
+        test('handles string timeout values correctly', function () {
+            Config::set('prism-transformer.transformation.client_options.timeout', '450');
+            Config::set('prism-transformer.transformation.client_options.connect_timeout', '25');
+
+            $timeout = $this->configService->getClientTimeout();
+            $connectTimeout = $this->configService->getClientConnectTimeout();
+
+            expect($timeout)->toBe(450);
+            expect($connectTimeout)->toBe(25);
+        });
+
+        test('handles zero timeout values', function () {
+            Config::set('prism-transformer.transformation.client_options.timeout', 0);
+            Config::set('prism-transformer.transformation.client_options.connect_timeout', 0);
+
+            $timeout = $this->configService->getClientTimeout();
+            $connectTimeout = $this->configService->getClientConnectTimeout();
+
+            expect($timeout)->toBe(0);
+            expect($connectTimeout)->toBe(0);
+        });
+
+        test('handles negative timeout values', function () {
+            Config::set('prism-transformer.transformation.client_options.timeout', -10);
+            Config::set('prism-transformer.transformation.client_options.connect_timeout', -5);
+
+            $timeout = $this->configService->getClientTimeout();
+            $connectTimeout = $this->configService->getClientConnectTimeout();
+
+            expect($timeout)->toBe(-10);
+            expect($connectTimeout)->toBe(-5);
+        });
+
+        test('handles invalid timeout values with type casting', function () {
+            Config::set('prism-transformer.transformation.client_options.timeout', 'invalid');
+            Config::set('prism-transformer.transformation.client_options.connect_timeout', []);
+
+            $timeout = $this->configService->getClientTimeout();
+            $connectTimeout = $this->configService->getClientConnectTimeout();
+
+            // PHP's (int) cast behavior
+            expect($timeout)->toBe(0);
+            expect($connectTimeout)->toBe(0);
+        });
+
+        test('client timeout methods return integers', function () {
+            Config::set('prism-transformer.transformation.client_options.timeout', 240.5);
+            Config::set('prism-transformer.transformation.client_options.connect_timeout', 15.8);
+
+            $timeout = $this->configService->getClientTimeout();
+            $connectTimeout = $this->configService->getClientConnectTimeout();
+
+            expect($timeout)->toBeInt();
+            expect($connectTimeout)->toBeInt();
+            expect($timeout)->toBe(240);
+            expect($connectTimeout)->toBe(15);
+        });
+    });
+
     describe('configuration validation', function () {
         test('can validate complete configuration', function () {
             // Set up complete configuration

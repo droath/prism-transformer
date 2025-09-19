@@ -251,6 +251,32 @@ class ConfigurationService
     }
 
     /**
+     * Get client timeout for transformations.
+     *
+     * @return int The timeout in seconds.
+     */
+    public function getClientTimeout(): int
+    {
+        return (int) config(
+            'prism-transformer.transformation.client_options.timeout',
+            180
+        );
+    }
+
+    /**
+     * Get client connect timeout for transformations.
+     *
+     * @return int The connect timeout in seconds.
+     */
+    public function getClientConnectTimeout(): int
+    {
+        return (int) config(
+            'prism-transformer.transformation.client_options.connect_timeout',
+            0
+        );
+    }
+
+    /**
      * Get rate limiting configuration.
      *
      * @return array<string, mixed> The rate-limiting configuration.
