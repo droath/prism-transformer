@@ -8,6 +8,7 @@ use Prism\Prism\Prism;
 use Prism\Prism\Text\Response as TextResponse;
 use Prism\Prism\Structured\Response as StructuredResponse;
 use Prism\Prism\Schema\ObjectSchema;
+use Prism\Prism\ValueObjects\Messages\UserMessage;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Contracts\Cache\Repository;
@@ -298,7 +299,7 @@ abstract class BaseTransformer implements TransformerInterface
     protected function performTransformation(string $content): TransformerResult
     {
         try {
-            $response = $this->makeRequest();
+            $response = $this->makeRequest($content);
 
             return TransformerResult::successful(
                 $this->extractResponseData($response),
@@ -341,7 +342,7 @@ abstract class BaseTransformer implements TransformerInterface
     /**
      * Make the request to the LLM provider.
      */
-    protected function makeRequest(): TextResponse|StructuredResponse
+    protected function makeRequest(string $content): TextResponse|StructuredResponse
     {
         $provider = $this->provider()->toPrism();
         $outputFormat = $this->outputFormat();
@@ -352,7 +353,10 @@ abstract class BaseTransformer implements TransformerInterface
 
         $resource
             ->using($provider, $this->model())
-            ->withPrompt($this->prompt());
+            ->withMessages([
+                new UserMessage($this->prompt()),
+                new UserMessage($content),
+            ]);
 
         if ($topP = $this->topP()) {
             $resource->usingTopP($topP);
