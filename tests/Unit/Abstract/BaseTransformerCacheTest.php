@@ -260,7 +260,7 @@ describe('BaseTransformer Caching', function () {
             expect($transformer->callCount)->toBe(1); // No additional calls
         });
 
-        test('stores and retrieves failed transformation results', function () {
+        test('does not cache failed transformation results', function () {
             Config::set('prism-transformer.cache.enabled', true);
 
             $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
@@ -285,17 +285,17 @@ describe('BaseTransformer Caching', function () {
 
             $content = 'Test content';
 
-            // First call should perform and cache transformation
+            // First call should perform transformation but not cache it since it failed
             $result1 = $transformer->execute($content);
             expect($result1->isFailed())->toBeTrue();
             expect($result1->errors())->toContain('API error occurred');
             expect($transformer->callCount)->toBe(1);
 
-            // Second call should return cached failed result
+            // Second call should perform transformation again since failed results are not cached
             $result2 = $transformer->execute($content);
             expect($result2->isFailed())->toBeTrue();
             expect($result2->errors())->toContain('API error occurred');
-            expect($transformer->callCount)->toBe(1); // No additional calls
+            expect($transformer->callCount)->toBe(2); // Additional call made since failed results aren't cached
         });
 
         test('preserves metadata in cached results', function () {

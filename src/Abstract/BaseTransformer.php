@@ -9,6 +9,7 @@ use Prism\Prism\Text\Response as TextResponse;
 use Prism\Prism\Structured\Response as StructuredResponse;
 use Prism\Prism\Schema\ObjectSchema;
 use Prism\Prism\ValueObjects\Messages\UserMessage;
+use Prism\Prism\ValueObjects\Messages\SystemMessage;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Contracts\Cache\Repository;
@@ -75,14 +76,20 @@ abstract class BaseTransformer implements TransformerInterface
      */
     public function execute(string $content): TransformerResult
     {
-        if ($result = $this->getCache()) {
+        if (
+            ($result = $this->getCache())
+            && $result->isSuccessful()
+        ) {
             return $result;
         }
         $this->beforeTransform($content);
 
         $result = $this->performTransformation($content);
 
-        $this->setCache($result);
+        if ($result->isSuccessful()) {
+            $this->setCache($result);
+        }
+
         $this->afterTransform($result);
 
         return $result;
@@ -234,6 +241,34 @@ abstract class BaseTransformer implements TransformerInterface
     }
 
     /**
+     * Define the system prompt message for LLM context setting.
+     *
+     * Override this method in concrete transformers to provide system-level
+     * instructions that guide the model's behavior and establish context for
+     * the transformation. System messages are typically used to set the role,
+     * tone, constraints, or behavioral guidelines for the AI assistant.
+     *
+     * Returning null (default) means no system message will be included,
+     * leaving the model to operate with its default behavior.
+     *
+     * @return string|null
+     *   The system prompt message or null for no system message
+     *
+     * @example Setting model behavior:
+     * ```php
+     * protected function systemPrompt(): ?string
+     * {
+     *     return 'You are a helpful assistant specialized in content summarization.
+     *             Be concise and focus on key points.';
+     * }
+     * ```
+     */
+    protected function systemPrompt(): ?string
+    {
+        return null;
+    }
+
+    /**
      * Define model schema configuration for structured output generation.
      *
      * Override this method in concrete transformers to explicitly control
@@ -353,10 +388,9 @@ abstract class BaseTransformer implements TransformerInterface
 
         $resource
             ->using($provider, $this->model())
-            ->withMessages([
-                new UserMessage($this->prompt()),
-                new UserMessage($content),
-            ]);
+            ->withMessages(
+                $this->structureMessages($content)
+            );
 
         if ($topP = $this->topP()) {
             $resource->usingTopP($topP);
@@ -375,6 +409,34 @@ abstract class BaseTransformer implements TransformerInterface
         return $outputFormat !== null
             ? $resource->asStructured()
             : $resource->asText();
+    }
+
+    /**
+     * Configure the resource with messages for the LLM transformation.
+     *
+     * This method handles the message structure setup for Prism resources,
+     * providing the prompt and content as separate user messages. If a system
+     * prompt is defined, it will be included as the first message.
+     *
+     * Concrete transformers can override this method to customize message handling,
+     * such as adding system messages, conversation history, or different
+     * message types.
+     *
+     * @param string $content
+     *   The content to be transformed
+     */
+    protected function structureMessages(string $content): array
+    {
+        $messages = [];
+
+        if ($systemPrompt = $this->systemPrompt()) {
+            $messages[] = new SystemMessage($systemPrompt);
+        }
+
+        $messages[] = new UserMessage($this->prompt());
+        $messages[] = new UserMessage($content);
+
+        return $messages;
     }
 
     /**
@@ -434,6 +496,7 @@ abstract class BaseTransformer implements TransformerInterface
         return hash('sha256', serialize(array_filter([
             static::class,
             $this->prompt(),
+            $this->systemPrompt(),
             $this->provider()->value,
             $this->topP(),
             $this->model(),
