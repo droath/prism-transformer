@@ -2,7 +2,7 @@
 
 namespace Droath\PrismTransformer;
 
-use Illuminate\Support\Facades\Queue;
+use Droath\PrismTransformer\Handlers\TextTransformerHandler;
 use Droath\PrismTransformer\Jobs\TransformationJob;
 use Droath\PrismTransformer\Handlers\UrlTransformerHandler;
 use Droath\PrismTransformer\Contracts\PrismTransformerInterface;
@@ -13,7 +13,7 @@ use Droath\PrismTransformer\Services\RateLimitService;
 use Illuminate\Foundation\Bus\PendingDispatch;
 
 /**
- * Main PrismTransformer class providing fluent interface for AI-powered
+ * The main PrismTransformer class providing fluent interface for AI-powered
  * content transformation.
  *
  * This class serves as the primary entry point for the PrismTransformer
@@ -103,7 +103,7 @@ class PrismTransformer implements PrismTransformerInterface
      */
     public function text(string $content): static
     {
-        $this->content = $content;
+        $this->content = (new TextTransformerHandler($content))->handle();
 
         return $this;
     }
@@ -201,24 +201,14 @@ class PrismTransformer implements PrismTransformerInterface
     /**
      * Handle asynchronous transformation by dispatching a job.
      */
-    protected function handleAsyncTransformation($handler): TransformerResult|PendingDispatch|null
-    {
-        if ($handler instanceof TransformerInterface) {
-            return TransformationJob::dispatch(
-                $handler,
-                $this->content ?? '',
-                $this->context
-            );
-        }
-
-        // For closures, execute them synchronously since TransformationJob requires TransformerInterface
-        if (is_callable($handler)) {
-            return $handler($this->content);
-        }
-
-        // Debug: This should not happen
-        // var_dump('No handler match found, returning null');
-        return null;
+    protected function handleAsyncTransformation(
+        \Closure|TransformerInterface $handler
+    ): TransformerResult|PendingDispatch|null {
+        return TransformationJob::dispatch(
+            $handler,
+            $this->content ?? '',
+            $this->context
+        );
     }
 
     /**
@@ -226,12 +216,12 @@ class PrismTransformer implements PrismTransformerInterface
      */
     protected function handleSyncTransformation($handler): ?TransformerResult
     {
-        if ($handler instanceof TransformerInterface) {
-            return $handler->execute($this->content);
-        }
-
         if (is_callable($handler)) {
             return $handler($this->content);
+        }
+
+        if ($handler instanceof TransformerInterface) {
+            return $handler->execute($this->content);
         }
 
         return null;
@@ -249,7 +239,10 @@ class PrismTransformer implements PrismTransformerInterface
             return $this->transformerHandler;
         }
 
-        if (is_string($this->transformerHandler) && class_exists($this->transformerHandler)) {
+        if (
+            is_string($this->transformerHandler)
+            && class_exists($this->transformerHandler)
+        ) {
             return resolve($this->transformerHandler);
         }
 

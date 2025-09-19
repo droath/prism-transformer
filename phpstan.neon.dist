@@ -9,6 +9,7 @@ parameters:
         - database
     tmpDir: build/phpstan
     checkOctaneCompatibility: true
+    treatPhpDocTypesAsCertain: false
     checkModelProperties: true
     excludePaths:
         - config/prism-transformer.php

@@ -66,7 +66,19 @@ describe('TransformationJob', function () {
 
             $job = new TransformationJob($transformer, $content, $context);
 
-            expect($job->transformer)->toBe($transformer)
+            expect($job->handler)->toBe($transformer)
+                ->and($job->content)->toBe($content)
+                ->and($job->context)->toBe($context);
+        });
+
+        test('accepts closure handler', function () {
+            $closure = fn (string $content) => TransformerResult::successful("Processed: {$content}");
+            $content = 'Test content for transformation';
+            $context = ['user_id' => 123];
+
+            $job = new TransformationJob($closure, $content, $context);
+
+            expect($job->handler)->toBeInstanceOf(\Laravel\SerializableClosure\SerializableClosure::class)
                 ->and($job->content)->toBe($content)
                 ->and($job->context)->toBe($context);
         });
@@ -110,7 +122,7 @@ describe('TransformationJob', function () {
 
             expect($job->content)->toBe($content)
                 ->and($job->context)->toBe($context)
-                ->and($job->transformer)->toBeInstanceOf(SummarizeTransformer::class);
+                ->and($job->handler)->toBeInstanceOf(SummarizeTransformer::class);
         });
 
         test('job can handle serialization requirements', function () {
@@ -118,10 +130,84 @@ describe('TransformationJob', function () {
             $job = new TransformationJob($transformer, 'content', ['user_id' => 789]);
 
             // Test that job has SerializesModels trait properties
-            expect($job)->toHaveProperty('transformer')
+            expect($job)->toHaveProperty('handler')
                 ->and($job)->toHaveProperty('content')
                 ->and($job)->toHaveProperty('context');
         });
+    });
+
+    describe('closure queue functionality', function () {
+        test('handles closure execution with successful result', function () {
+            $expectedResult = TransformerResult::successful('Closure processed content');
+            $closure = fn (string $content) => $expectedResult;
+
+            $content = 'Test content';
+            $context = ['user_id' => 123];
+
+            $job = new TransformationJob($closure, $content, $context);
+            $job->handle();
+
+            Event::assertDispatched(TransformationStarted::class, function ($event) use ($content, $context) {
+                return $event->content === $content
+                    && $event->context === $context;
+            });
+
+            Event::assertDispatched(TransformationCompleted::class, function ($event) use ($expectedResult, $context) {
+                return $event->result === $expectedResult
+                    && $event->context === $context;
+            });
+        });
+
+        test('handles closure that throws exception', function () {
+            $exception = new \RuntimeException('Closure processing failed');
+            $closure = fn (string $content) => throw $exception;
+
+            $content = 'Test content';
+            $context = ['user_id' => 123];
+
+            $job = new TransformationJob($closure, $content, $context);
+
+            expect(fn () => $job->handle())->toThrow(\RuntimeException::class);
+
+            Event::assertDispatched(TransformationStarted::class);
+            Event::assertDispatched(TransformationFailed::class, function ($event) use ($exception, $context) {
+                return $event->exception === $exception
+                    && $event->context === $context;
+            });
+        });
+
+        test('closure can access and transform content', function () {
+            $closure = fn (string $content) => TransformerResult::successful(strtoupper($content));
+
+            $content = 'test content';
+            $job = new TransformationJob($closure, $content, []);
+            $job->handle();
+
+            Event::assertDispatched(TransformationCompleted::class, function ($event) {
+                return $event->result->getContent() === 'TEST CONTENT';
+            });
+        });
+
+        test('failed method logs closure handler correctly', function () {
+            $exception = new \Exception('Closure job failed');
+            $closure = fn (string $content) => 'result';
+
+            $job = new TransformationJob($closure, 'content', ['user_id' => 123]);
+
+            Log::shouldReceive('error')
+                ->once()
+                ->with(
+                    'TransformationJob failed after all retry attempts',
+                    \Mockery::on(function ($context) use ($exception) {
+                        return $context['exception'] === $exception->getMessage()
+                            && $context['handler'] === 'Closure'
+                            && $context['context']['user_id'] === 123;
+                    })
+                );
+
+            $job->failed($exception);
+        });
+
     });
 
     describe('job handle method execution', function () {
@@ -234,7 +320,7 @@ describe('TransformationJob', function () {
                         return $context['exception'] === $exception->getMessage()
                             && $context['context']['user_id'] === 123
                             && isset($context['content_length'])
-                            && isset($context['transformer']);
+                            && isset($context['handler']);
                     })
                 );
 

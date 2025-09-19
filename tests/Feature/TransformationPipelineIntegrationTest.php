@@ -192,7 +192,7 @@ describe('Complete Transformation Pipeline Integration', function () {
                 ->transform();
 
             Queue::assertPushed(TransformationJob::class, function ($job) {
-                expect($job->transformer)->toBeInstanceOf(BaseTransformer::class);
+                expect($job->handler)->toBeInstanceOf(BaseTransformer::class);
 
                 return true;
             });

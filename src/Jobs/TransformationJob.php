@@ -16,11 +16,14 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
+use Laravel\SerializableClosure\SerializableClosure;
+use Droath\PrismTransformer\ValueObjects\TransformerResult;
+use Droath\PrismTransformer\Exceptions\TransformerException;
 
 /**
  * Queue job for processing data transformations asynchronously.
  *
- * This job handles the execution of transformer instances in the background,
+ * This job handles the execution of transformer instances and closures in the background,
  * providing event dispatching, error handling, and context preservation
  * throughout the transformation pipeline.
  */
@@ -44,12 +47,12 @@ class TransformationJob implements ShouldQueue
     /**
      * Create a new job instance.
      *
-     * @param TransformerInterface $transformer The transformer instance to execute
+     * @param \Droath\PrismTransformer\Contracts\TransformerInterface|\Closure|\Laravel\SerializableClosure\SerializableClosure $handler The transformer instance or closure to execute
      * @param string $content The content to transform
      * @param array $context Additional context data (user_id, tenant_id, etc.)
      */
     public function __construct(
-        public TransformerInterface $transformer,
+        public TransformerInterface|\Closure|SerializableClosure $handler,
         public string $content,
         public array $context = []
     ) {
@@ -65,6 +68,10 @@ class TransformationJob implements ShouldQueue
         if ($queueConnection = $configService->getQueueConnection()) {
             $this->onConnection($queueConnection);
         }
+
+        if ($this->handler instanceof \Closure) {
+            $this->handler = new SerializableClosure($this->handler);
+        }
     }
 
     /**
@@ -76,11 +83,26 @@ class TransformationJob implements ShouldQueue
     public function handle(): void
     {
         Event::dispatch(new TransformationStarted(
-            $this->content, $this->context)
-        );
+            $this->content,
+            $this->context
+        ));
 
         try {
-            $result = $this->transformer->execute($this->content);
+            $result = null;
+
+            if (is_callable($this->handler)) {
+                $result = ($this->handler)($this->content);
+            }
+
+            if ($this->handler instanceof TransformerInterface) {
+                $result = $this->handler->execute($this->content);
+            }
+
+            if (! $result instanceof TransformerResult) {
+                throw new TransformerException(
+                    'The transformer result is a TransformerResult instance.'
+                );
+            }
 
             Event::dispatch(
                 new TransformationCompleted($result, $this->context)
@@ -106,11 +128,16 @@ class TransformationJob implements ShouldQueue
      */
     public function failed(\Exception $exception): void
     {
+        $handlerType = match (true) {
+            $this->handler instanceof \Closure, $this->handler instanceof SerializableClosure => 'Closure',
+            default => get_class($this->handler),
+        };
+
         Log::error('TransformationJob failed after all retry attempts', [
             'exception' => $exception->getMessage(),
             'content_length' => strlen($this->content),
             'context' => $this->context,
-            'transformer' => get_class($this->transformer),
+            'handler' => $handlerType,
         ]);
 
         Event::dispatch(

@@ -344,12 +344,6 @@ abstract class BaseTransformer implements TransformerInterface
     protected function makeRequest(): TextResponse|StructuredResponse
     {
         $provider = $this->provider()->toPrism();
-
-        if ($provider === null) {
-            throw new \InvalidArgumentException(
-                'Invalid provider'
-            );
-        }
         $outputFormat = $this->outputFormat();
 
         $resource = $outputFormat !== null

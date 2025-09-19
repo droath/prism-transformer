@@ -6,8 +6,9 @@ namespace Droath\PrismTransformer\Handlers;
 
 use Droath\PrismTransformer\ContentFetchers\BasicHttpFetcher;
 use Droath\PrismTransformer\Contracts\ContentFetcherInterface;
+use Droath\PrismTransformer\Handlers\Contracts\HandlerInterface;
 
-class UrlTransformerHandler
+class UrlTransformerHandler implements HandlerInterface
 {
     public function __construct(
         protected string $url,
@@ -16,9 +17,11 @@ class UrlTransformerHandler
         $this->fetcher = $fetcher ?? resolve(BasicHttpFetcher::class);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function handle(): ?string
     {
-
         return $this->url;
     }
 }

@@ -1,0 +1,11 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#Trait Droath\\PrismTransformer\\Concerns\\ProcessesResults is used zero times and is not analysed#'
+			path: src/Concerns/ProcessesResults.php
+		-
+			message: '#Trait Droath\\PrismTransformer\\Concerns\\ValidatesInput is used zero times and is not analysed#'
+			path: src/Concerns/ValidatesInput.php
+		-
+			message: '#Undefined variable: \$this#'
+			path: src/Testing/TransformerExpectations.php

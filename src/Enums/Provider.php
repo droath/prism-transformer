@@ -29,10 +29,10 @@ enum Provider: string
     /**
      * Converts the object's state into a PrismProvider instance.
      *
-     * @return PrismProvider|null
-     *   The corresponding instance of PrismProvider, or null if no match.
+     * @return PrismProvider
+     *   The corresponding instance of PrismProvider.
      */
-    public function toPrism(): ?PrismProvider
+    public function toPrism(): PrismProvider
     {
         return match ($this) {
             self::XAI => PrismProvider::XAI,
@@ -46,7 +46,6 @@ enum Provider: string
             self::ANTHROPIC => PrismProvider::Anthropic,
             self::OPENROUTER => PrismProvider::OpenRouter,
             self::ELEVENLABS => PrismProvider::ElevenLabs,
-            default => null,
         };
     }
 

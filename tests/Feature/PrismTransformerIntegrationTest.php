@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Droath\PrismTransformer\PrismTransformer;
 use Droath\PrismTransformer\Contracts\ContentFetcherInterface;
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
+use Illuminate\Foundation\Bus\PendingDispatch;
 
 use function Pest\Laravel\mock;
 
@@ -120,9 +121,7 @@ describe('PrismTransformer Integration', function () {
                 ->using($closure)
                 ->transform();
 
-            expect($result)->toBeInstanceOf(TransformerResult::class);
-            expect($result->isSuccessful())->toBeTrue();
-            expect($result->data)->toBe($transformedContent);
+            expect($result)->toBeInstanceOf(PendingDispatch::class);
 
             // Verify async flag was set
             $reflection = new ReflectionClass($transformer);
@@ -225,8 +224,7 @@ describe('PrismTransformer Integration', function () {
                 ->using($closure)
                 ->transform();
 
-            expect($result->isSuccessful())->toBeTrue();
-            expect($result->data)->toBe('Handled null content');
+            expect($result)->toBeInstanceOf(PendingDispatch::class);
         });
     });
 

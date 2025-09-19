@@ -2,15 +2,21 @@
 
 declare(strict_types=1);
 
-use Droath\PrismTransformer\Handles\Contacts\HandlerInterface;
+namespace Droath\PrismTransformer\Handlers;
+
+use Droath\PrismTransformer\Handlers\Contracts\HandlerInterface;
 
 class TextTransformerHandler implements HandlerInterface
 {
+    public function __construct(
+        protected string $content
+    ) {}
+
     /**
      * {@inheritDoc}
      */
-    public function handler(): ?string
+    public function handle(): ?string
     {
-        // TODO: Implement handler() method.
+        return $this->content;
     }
 }

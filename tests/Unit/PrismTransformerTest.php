@@ -417,9 +417,7 @@ describe('PrismTransformer', function () {
         });
 
         test('async execution works with different transformer types', function () {
-            Queue::fake();
-
-            // Test with Closure - still returns TransformerResult as closures execute synchronously
+            // Test with Closure - now returns PendingDispatch for async queue execution
             $closure = fn ($content) => TransformerResult::successful('closure async: '.$content);
 
             $result1 = $this->transformer
@@ -428,7 +426,7 @@ describe('PrismTransformer', function () {
                 ->async()
                 ->transform();
 
-            expect($result1)->toBeInstanceOf(TransformerResult::class);
+            expect($result1)->toBeInstanceOf(PendingDispatch::class);
 
             // Test with TransformerInterface - returns PendingDispatch for async execution
             $transformer = new \Droath\PrismTransformer\Tests\Stubs\SimpleAsyncTransformer();
@@ -628,6 +626,8 @@ describe('PrismTransformer', function () {
         });
 
         test('maintains state across multiple operations', function () {
+            Queue::fake();
+
             $this->transformer->text('initial content');
             $this->transformer->async();
 
@@ -649,7 +649,7 @@ describe('PrismTransformer', function () {
             expect($asyncProperty->getValue($this->transformer))->toBeTrue();
 
             $result = $this->transformer->transform();
-            expect($result->data)->toBe('initial content');
+            expect($result)->toBeInstanceOf(PendingDispatch::class);
         });
 
         test('content is overwritten by url method', function () {
