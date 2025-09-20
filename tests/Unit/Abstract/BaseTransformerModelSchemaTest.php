@@ -279,6 +279,81 @@ describe('BaseTransformer Model Schema Conversion', function () {
 
             expect($result)->toBeNull();
         });
+
+        test('resolveOutputFormat handles Model class name strings', function () {
+            $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(ModelSchemaService::class)) extends BaseTransformer
+            {
+                public function prompt(): string
+                {
+                    return 'Transform this content';
+                }
+
+                protected function outputFormat(): string
+                {
+                    return TestModel::class;
+                }
+
+                public function resolveOutputFormat(): ?ObjectSchema
+                {
+                    return parent::resolveOutputFormat();
+                }
+            };
+
+            $result = $transformer->resolveOutputFormat();
+
+            expect($result)->toBeInstanceOf(ObjectSchema::class);
+            expect($result->name)->toBe('testmodel');
+            expect($result->description)->toBe('Schema for TestModel model');
+        });
+
+        test('resolveOutputFormat returns null for non-Model class strings', function () {
+            $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(ModelSchemaService::class)) extends BaseTransformer
+            {
+                public function prompt(): string
+                {
+                    return 'Transform this content';
+                }
+
+                protected function outputFormat(): string
+                {
+                    return \stdClass::class;
+                }
+
+                public function resolveOutputFormat(): ?ObjectSchema
+                {
+                    return parent::resolveOutputFormat();
+                }
+            };
+
+            $result = $transformer->resolveOutputFormat();
+
+            expect($result)->toBeNull();
+        });
+
+        test('outputFormat method supports returning Model class name strings', function () {
+            $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(ModelSchemaService::class)) extends BaseTransformer
+            {
+                public function prompt(): string
+                {
+                    return 'Transform this content';
+                }
+
+                protected function outputFormat(): string
+                {
+                    return TestModel::class;
+                }
+
+                public function getOutputFormat(): null|ObjectSchema|Model|string
+                {
+                    return $this->outputFormat();
+                }
+            };
+
+            $result = $transformer->getOutputFormat();
+
+            expect($result)->toBe(TestModel::class);
+            expect($result)->toBeString();
+        });
     });
 
     describe('error handling scenarios', function () {

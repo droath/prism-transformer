@@ -138,13 +138,22 @@ abstract class BaseTransformer implements TransformerInterface
      * Define the expected output format for structured transformations.
      *
      * This method allows transformers to specify a structured schema for
-     * their output. Return null for unstructured text output, or provide
-     * an ObjectSchema for structured data output.
+     * their output. Return null for unstructured text output, provide
+     * an ObjectSchema for structured data output, a Model instance, or
+     * a Model class name string.
      *
-     * @return \Prism\Prism\Schema\ObjectSchema|\Illuminate\Database\Eloquent\Model|null
-     *   The output schema definition, or null for text output
+     * @return \Prism\Prism\Schema\ObjectSchema|\Illuminate\Database\Eloquent\Model|string|null
+     *   The output schema definition, Model instance, Model class name, or null for text output
+     *
+     * @example Using a Model class name:
+     * ```php
+     * protected function outputFormat(): null|ObjectSchema|Model|string
+     * {
+     *     return User::class;
+     * }
+     * ```
      */
-    protected function outputFormat(): null|ObjectSchema|Model
+    protected function outputFormat(): null|ObjectSchema|Model|string
     {
         return null;
     }
@@ -522,12 +531,12 @@ abstract class BaseTransformer implements TransformerInterface
     /**
      * Resolve the transformer output format.
      *
-     * Converts various output format types (null, ObjectSchema, Model) into
+     * Converts various output format types (null, ObjectSchema, Model, class name string) into
      * a standardized ObjectSchema instance using the ModelSchemaService for
      * Model conversions.
      *
      * Uses the transformer's schema configuration when working with Model
-     * instances.
+     * instances or class names.
      */
     protected function resolveOutputFormat(): ?ObjectSchema
     {
@@ -537,6 +546,10 @@ abstract class BaseTransformer implements TransformerInterface
             $outputFormat instanceof ObjectSchema => $outputFormat,
             $outputFormat instanceof Model => $this->modelSchemaService->convertModelToSchema(
                 $outputFormat,
+                $this->modelSchemaConfig()
+            ),
+            is_string($outputFormat) && is_subclass_of($outputFormat, Model::class) => $this->modelSchemaService->convertModelToSchema(
+                new $outputFormat(),
                 $this->modelSchemaConfig()
             ),
             default => null,
