@@ -351,7 +351,7 @@ abstract class BaseTransformer implements TransformerInterface
      * }
      * ```
      */
-    protected function getModelSchemaConfig(): array
+    protected function modelSchemaConfig(): array
     {
         return [];
     }
@@ -537,7 +537,7 @@ abstract class BaseTransformer implements TransformerInterface
             $outputFormat instanceof ObjectSchema => $outputFormat,
             $outputFormat instanceof Model => $this->modelSchemaService->convertModelToSchema(
                 $outputFormat,
-                $this->getModelSchemaConfig()
+                $this->modelSchemaConfig()
             ),
             default => null,
         };

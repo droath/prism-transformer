@@ -29,7 +29,7 @@ describe('BaseTransformer schema configuration integration', function () {
 
                 public function getSchemaConfig(): array
                 {
-                    return $this->getModelSchemaConfig();
+                    return $this->modelSchemaConfig();
                 }
             };
 
@@ -46,10 +46,10 @@ describe('BaseTransformer schema configuration integration', function () {
 
                 public function getSchemaConfig(): array
                 {
-                    return $this->getModelSchemaConfig();
+                    return $this->modelSchemaConfig();
                 }
 
-                protected function getModelSchemaConfig(): array
+                protected function modelSchemaConfig(): array
                 {
                     return [
                         'name' => ['required' => true],
@@ -106,7 +106,7 @@ describe('BaseTransformer schema configuration integration', function () {
                     return $this->model;
                 }
 
-                protected function getModelSchemaConfig(): array
+                protected function modelSchemaConfig(): array
                 {
                     return $this->config;
                 }
