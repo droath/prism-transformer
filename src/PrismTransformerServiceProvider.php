@@ -5,7 +5,6 @@ namespace Droath\PrismTransformer;
 use Illuminate\Cache\RateLimiter;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use Droath\PrismTransformer\Commands\PrismTransformerCommand;
 use Droath\PrismTransformer\Services\ConfigurationService;
 use Droath\PrismTransformer\Services\RateLimitService;
 
@@ -20,10 +19,9 @@ class PrismTransformerServiceProvider extends PackageServiceProvider
          */
         $package
             ->name('prism-transformer')
-            ->hasConfigFile()
             ->hasViews()
-            ->hasMigration('create_prism_transformer_table')
-            ->hasCommand(PrismTransformerCommand::class);
+            ->hasConfigFile()
+            ->hasMigration('create_prism_transformer_table');
     }
 
     public function packageRegistered(): void

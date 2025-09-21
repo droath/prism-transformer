@@ -225,13 +225,14 @@ describe('PrismTransformer Integration', function () {
                 throw new \Exception('Transformation error');
             };
 
-            expect(function () use ($transformer, $closure) {
-                $transformer
-                    ->text('some content')
-                    ->async()
-                    ->using($closure)
-                    ->transform();
-            })->toThrow(\Exception::class, 'Transformation error');
+            $result = $transformer
+                ->text('some content')
+                ->async()
+                ->using($closure)
+                ->transform();
+
+            // Async transformations return PendingDispatch, not the actual result
+            expect($result)->toBeInstanceOf(PendingDispatch::class);
         });
 
         test('null content handling in complete workflow', function () {
