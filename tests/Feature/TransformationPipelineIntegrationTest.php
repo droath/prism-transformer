@@ -101,6 +101,14 @@ describe('Complete Transformation Pipeline Integration', function () {
 
             $url = 'https://example.com/test';
             $transformedContent = 'Transformed URL content';
+            $mockedFetchedContent = 'Content fetched from URL';
+
+            // Mock the BasicHttpFetcher to avoid real HTTP requests
+            $mockFetcher = mock(\Droath\PrismTransformer\ContentFetchers\BasicHttpFetcher::class);
+            $mockFetcher->expects('fetch')->with($url)->andReturn($mockedFetchedContent);
+
+            // Bind the mock to the container
+            $this->app->instance(\Droath\PrismTransformer\ContentFetchers\BasicHttpFetcher::class, $mockFetcher);
 
             // Note: UrlTransformerHandler currently just returns the URL, not fetch content
             $transformerInterface = new class($this->app->make(\Illuminate\Cache\CacheManager::class), $this->configService, $this->app->make(ModelSchemaService::class)) extends BaseTransformer

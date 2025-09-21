@@ -258,6 +258,126 @@ describe('BaseContentFetcher', function () {
         });
     });
 
+    describe('content validation', function () {
+        test('caches valid content', function () {
+            Config::set('prism-transformer.cache.enabled', true);
+
+            $fetcher = new class($this->cacheManager, $this->configurationService) extends BaseContentFetcher
+            {
+                public int $callCount = 0;
+
+                protected function performFetch(string $url, array $options = []): string
+                {
+                    $this->callCount++;
+
+                    return "Valid content from {$url}";
+                }
+            };
+
+            $url = 'https://example.com/valid';
+
+            // First call should fetch and cache
+            $result1 = $fetcher->fetch($url);
+            expect($fetcher->callCount)->toBe(1);
+            expect($result1)->toBe('Valid content from https://example.com/valid');
+
+            // Second call should use cache
+            $result2 = $fetcher->fetch($url);
+            expect($fetcher->callCount)->toBe(1);
+            expect($result2)->toBe('Valid content from https://example.com/valid');
+        });
+
+        test('does not cache empty content', function () {
+            Config::set('prism-transformer.cache.enabled', true);
+
+            $fetcher = new class($this->cacheManager, $this->configurationService) extends BaseContentFetcher
+            {
+                public int $callCount = 0;
+
+                protected function performFetch(string $url, array $options = []): string
+                {
+                    $this->callCount++;
+
+                    return '';
+                }
+            };
+
+            $url = 'https://example.com/empty';
+
+            // First call should fetch but not cache
+            $result1 = $fetcher->fetch($url);
+            expect($fetcher->callCount)->toBe(1);
+            expect($result1)->toBe('');
+
+            // Second call should fetch again (no cache)
+            $result2 = $fetcher->fetch($url);
+            expect($fetcher->callCount)->toBe(2);
+            expect($result2)->toBe('');
+        });
+
+        test('does not cache whitespace-only content', function () {
+            Config::set('prism-transformer.cache.enabled', true);
+
+            $fetcher = new class($this->cacheManager, $this->configurationService) extends BaseContentFetcher
+            {
+                public int $callCount = 0;
+
+                protected function performFetch(string $url, array $options = []): string
+                {
+                    $this->callCount++;
+
+                    return "   \n\t  ";
+                }
+            };
+
+            $url = 'https://example.com/whitespace';
+
+            // First call should fetch but not cache
+            $result1 = $fetcher->fetch($url);
+            expect($fetcher->callCount)->toBe(1);
+            expect($result1)->toBe("   \n\t  ");
+
+            // Second call should fetch again (no cache)
+            $result2 = $fetcher->fetch($url);
+            expect($fetcher->callCount)->toBe(2);
+            expect($result2)->toBe("   \n\t  ");
+        });
+
+        test('can override content validation', function () {
+            Config::set('prism-transformer.cache.enabled', true);
+
+            $fetcher = new class($this->cacheManager, $this->configurationService) extends BaseContentFetcher
+            {
+                public int $callCount = 0;
+
+                protected function performFetch(string $url, array $options = []): string
+                {
+                    $this->callCount++;
+
+                    return 'error:404';
+                }
+
+                protected function isValidContent(string $content): bool
+                {
+                    // Don't cache error responses
+                    return ! str_starts_with($content, 'error:');
+                }
+            };
+
+            $url = 'https://example.com/error';
+
+            // First call should fetch but not cache due to custom validation
+            $result1 = $fetcher->fetch($url);
+            expect($fetcher->callCount)->toBe(1);
+            expect($result1)->toBe('error:404');
+
+            // Second call should fetch again (no cache)
+            $result2 = $fetcher->fetch($url);
+            expect($fetcher->callCount)->toBe(2);
+            expect($result2)->toBe('error:404');
+        });
+    });
+
     describe('constructor flexibility', function () {
         test('can be instantiated with minimal parameters', function () {
             $fetcher = new class() extends BaseContentFetcher

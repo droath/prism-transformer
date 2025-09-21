@@ -20,6 +20,7 @@ use Droath\PrismTransformer\Services\ModelSchemaService;
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
 use Droath\PrismTransformer\ValueObjects\TransformerMetadata;
 use Droath\PrismTransformer\Contracts\TransformerInterface;
+use Droath\PrismTransformer\Concerns\ObjectSerializer;
 
 /**
  * Foundation abstract class providing core LLM transformation functionality.
@@ -54,6 +55,8 @@ use Droath\PrismTransformer\Contracts\TransformerInterface;
  */
 abstract class BaseTransformer implements TransformerInterface
 {
+    use ObjectSerializer;
+
     /**
      * Create a new BaseTransformer instance.
      *
@@ -653,5 +656,22 @@ abstract class BaseTransformer implements TransformerInterface
     protected function buildCacheKey(): string
     {
         return "{$this->configuration->getCachePrefix()}:{$this->cacheId()}";
+    }
+
+    /**
+     * Define the whitelist of classes allowed for secure deserialization.
+     *
+     * BaseTransformer allows deserialization of its core dependencies to support
+     * queue serialization while maintaining security through whitelisting.
+     *
+     * @return array<string> Array of fully qualified class names that are safe to deserialize
+     */
+    protected function whitelistSerializationClasses(): array
+    {
+        return [
+            CacheManager::class,
+            ConfigurationService::class,
+            ModelSchemaService::class,
+        ];
     }
 }

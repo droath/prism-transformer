@@ -34,7 +34,9 @@ abstract class BaseContentFetcher implements ContentFetcherInterface
         }
         $content = $this->performFetch($url, $options);
 
-        $this->setCache($url, $content, $options);
+        if ($this->isValidContent($content)) {
+            $this->setCache($url, $content, $options);
+        }
 
         return $content;
     }
@@ -53,6 +55,21 @@ abstract class BaseContentFetcher implements ContentFetcherInterface
      * @throws \Throwable When content cannot be fetched
      */
     abstract protected function performFetch(string $url, array $options = []): string;
+
+    /**
+     * Validate if the content is valid for caching.
+     *
+     * Override this method in concrete classes to implement
+     * specific content validation logic.
+     *
+     * @param string $content The content to validate
+     *
+     * @return bool True if content is valid for caching, false otherwise
+     */
+    protected function isValidContent(string $content): bool
+    {
+        return ! empty(trim($content));
+    }
 
     /**
      * Generate a cache key for the given URL and options.

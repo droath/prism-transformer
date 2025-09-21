@@ -825,9 +825,6 @@ The package includes helpful Artisan commands:
 # Clear transformation cache
 php artisan prism-transformer:cache:clear
 
-# Test provider connectivity
-php artisan prism-transformer:test-providers
-
 # Generate a custom transformer class
 php artisan make:prism-transformer BlogSummarizer
 ```

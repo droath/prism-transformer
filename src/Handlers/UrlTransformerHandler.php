@@ -22,6 +22,6 @@ class UrlTransformerHandler implements HandlerInterface
      */
     public function handle(): ?string
     {
-        return $this->url;
+        return $this->fetcher->fetch($this->url);
     }
 }

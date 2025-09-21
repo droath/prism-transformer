@@ -29,32 +29,43 @@ describe('PrismTransformer Integration', function () {
     describe('UrlTransformerHandler integration', function () {
         test('url method creates UrlTransformerHandler with default BasicHttpFetcher', function () {
             $url = 'https://example.com';
+            $expectedContent = 'Mocked fetched content from example.com';
+
+            // Mock the BasicHttpFetcher to avoid real HTTP requests
+            $mockFetcher = mock(\Droath\PrismTransformer\ContentFetchers\BasicHttpFetcher::class);
+            $mockFetcher->expects('fetch')->with($url)->andReturn($expectedContent);
+
+            // Bind the mock to the container
+            $this->app->instance(\Droath\PrismTransformer\ContentFetchers\BasicHttpFetcher::class, $mockFetcher);
+
             $transformer = app(PrismTransformer::class);
             $result = $transformer->url($url);
 
             expect($result)->toBe($transformer);
 
-            // Verify content was set (current implementation returns URL)
+            // Verify content was set with the fetched content
             $reflection = new ReflectionClass($transformer);
             $contentProperty = $reflection->getProperty('content');
             $contentProperty->setAccessible(true);
-            expect($contentProperty->getValue($transformer))->toBe($url);
+            expect($contentProperty->getValue($transformer))->toBe($expectedContent);
         });
 
         test('url method accepts custom ContentFetcherInterface', function () {
             $url = 'https://example.com';
+            $expectedContent = 'Content from custom fetcher';
             $customFetcher = mock(ContentFetcherInterface::class);
+            $customFetcher->expects('fetch')->with($url)->andReturn($expectedContent);
 
             $transformer = app(PrismTransformer::class);
             $result = $transformer->url($url, $customFetcher);
 
             expect($result)->toBe($transformer);
 
-            // Verify content was set
+            // Verify content was set with fetched content
             $reflection = new ReflectionClass($transformer);
             $contentProperty = $reflection->getProperty('content');
             $contentProperty->setAccessible(true);
-            expect($contentProperty->getValue($transformer))->toBe($url);
+            expect($contentProperty->getValue($transformer))->toBe($expectedContent);
         });
     });
 
@@ -84,10 +95,18 @@ describe('PrismTransformer Integration', function () {
         test('url to transformation pipeline', function () {
             $url = 'https://api.example.com/data';
             $transformedContent = 'Processed API data';
+            $fetchedContent = 'Fetched API data content';
 
-            $closure = function ($input) use ($url, $transformedContent) {
-                // Current implementation passes the URL as content
-                expect($input)->toBe($url);
+            // Mock the BasicHttpFetcher to avoid real HTTP requests
+            $mockFetcher = mock(\Droath\PrismTransformer\ContentFetchers\BasicHttpFetcher::class);
+            $mockFetcher->expects('fetch')->with($url)->andReturn($fetchedContent);
+
+            // Bind the mock to the container
+            $this->app->instance(\Droath\PrismTransformer\ContentFetchers\BasicHttpFetcher::class, $mockFetcher);
+
+            $closure = function ($input) use ($fetchedContent, $transformedContent) {
+                // Current implementation passes the fetched content
+                expect($input)->toBe($fetchedContent);
 
                 return TransformerResult::successful($transformedContent);
             };
@@ -178,6 +197,14 @@ describe('PrismTransformer Integration', function () {
         test('url and text content mixing', function () {
             $transformer = app(PrismTransformer::class);
             $url = 'https://example.com';
+            $expectedFetchedContent = 'Fetched content from example.com';
+
+            // Mock the BasicHttpFetcher to avoid real HTTP requests
+            $mockFetcher = mock(\Droath\PrismTransformer\ContentFetchers\BasicHttpFetcher::class);
+            $mockFetcher->expects('fetch')->with($url)->andReturn($expectedFetchedContent);
+
+            // Bind the mock to the container
+            $this->app->instance(\Droath\PrismTransformer\ContentFetchers\BasicHttpFetcher::class, $mockFetcher);
 
             $closure = fn ($content) => TransformerResult::successful('Processed: '.$content);
 
@@ -188,7 +215,7 @@ describe('PrismTransformer Integration', function () {
                 ->using($closure)
                 ->transform();
 
-            expect($result->data)->toBe('Processed: '.$url);
+            expect($result->data)->toBe('Processed: '.$expectedFetchedContent);
         });
 
         test('error handling with transformer closure exception', function () {
