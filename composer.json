@@ -1,6 +1,6 @@
 {
     "name": "droath/prism-transformer",
-    "description": "This is my package prism-transformer",
+    "description": "A powerful Laravel package for AI-powered content transformation using multiple LLM providers.",
     "keywords": [
         "droath",
         "laravel",
