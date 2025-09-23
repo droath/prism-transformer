@@ -5,6 +5,8 @@ namespace Droath\PrismTransformer;
 use Droath\PrismTransformer\Handlers\TextTransformerHandler;
 use Droath\PrismTransformer\Jobs\TransformationJob;
 use Droath\PrismTransformer\Handlers\UrlTransformerHandler;
+use Droath\PrismTransformer\Handlers\ImageTransformerHandler;
+use Droath\PrismTransformer\Handlers\DocumentTransformerHandler;
 use Droath\PrismTransformer\Contracts\PrismTransformerInterface;
 use Droath\PrismTransformer\Contracts\TransformerInterface;
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
@@ -18,9 +20,9 @@ use Illuminate\Foundation\Bus\PendingDispatch;
  *
  * This class serves as the primary entry point for the PrismTransformer
  * package, offering a fluent interface for setting up and executing AI-powered
- * content transformations. It supports both text content and URL-based content
- * fetching with customizable transformers and asynchronous processing
- * capabilities.
+ * content transformations. It supports text content, URL-based content fetching,
+ * image processing, and document processing with customizable transformers and
+ * asynchronous processing capabilities.
  *
  * The class follows the Builder pattern, allowing method chaining for an
  * intuitive API:
@@ -37,6 +39,20 @@ use Illuminate\Foundation\Bus\PendingDispatch;
  * $result = (new PrismTransformer())
  *     ->url('https://example.com/article')
  *     ->using(new ArticleSummarizer())
+ *     ->transform();
+ * ```
+ * @example Image-based transformation:
+ * ```php
+ * $result = (new PrismTransformer())
+ *     ->image('/path/to/image.jpg')
+ *     ->using(new ImageAnalyzer())
+ *     ->transform();
+ * ```
+ * @example Document-based transformation:
+ * ```php
+ * $result = (new PrismTransformer())
+ *     ->document('/path/to/document.pdf')
+ *     ->using(new DocumentSummarizer())
  *     ->transform();
  * ```
  * @example Asynchronous processing:
@@ -116,6 +132,26 @@ class PrismTransformer implements PrismTransformerInterface
         ?ContentFetcherInterface $fetcher = null
     ): static {
         $this->content = (new UrlTransformerHandler($url, $fetcher))->handle();
+
+        return $this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function image(string $path, array $options = []): static
+    {
+        $this->content = (new ImageTransformerHandler($path, $options))->handle();
+
+        return $this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function document(string $path, array $options = []): static
+    {
+        $this->content = (new DocumentTransformerHandler($path, $options))->handle();
 
         return $this;
     }

@@ -11,8 +11,9 @@ use Illuminate\Foundation\Bus\PendingDispatch;
  * Interface for the main PrismTransformer class.
  *
  * This interface defines the fluent API for setting up and executing
- * AI-powered content transformations. It supports both text content
- * and URL-based content fetching with customizable transformers.
+ * AI-powered content transformations. It supports text content, URL-based
+ * content fetching, image processing, and document processing with
+ * customizable transformers.
  *
  * @api
  */
@@ -63,6 +64,114 @@ interface PrismTransformerInterface
         string $url,
         ?ContentFetcherInterface $fetcher = null
     ): static;
+
+    /**
+     * Set an image as the content source to be transformed.
+     *
+     * This method accepts image content through various input types (local files,
+     * URLs, base64 data, etc.) and processes it using the ImageTransformerHandler.
+     * The processed image will be converted to base64 format for consistent handling
+     * in the transformation pipeline.
+     *
+     * @param string $path The image path or content, interpreted based on inputType option
+     * @param array $options Configuration options for image processing:
+     *   - inputType (string): How to interpret the $path parameter. Options:
+     *     * 'localPath' (default): Local file system path
+     *     * 'url': HTTP/HTTPS URL to fetch image from
+     *     * 'base64': Base64-encoded image data
+     *     * 'storagePath': Laravel storage disk path (requires 'disk' option)
+     *     * 'rawContent': Raw binary image data (requires 'mimeType' option)
+     *     * 'fileId': External file identifier for cloud storage
+     *   - mimeType (string): MIME type for rawContent inputType (e.g., 'image/jpeg')
+     *   - disk (string): Laravel storage disk name for storagePath inputType
+     *
+     * @return static Returns self for method chaining
+     *
+     * @throws \InvalidArgumentException When inputType is unsupported or required options are missing
+     *
+     * @example Basic local file:
+     * ```php
+     * $transformer->image('/path/to/image.jpg')
+     *     ->using($imageAnalyzer)
+     *     ->transform();
+     * ```
+     * @example URL-based image:
+     * ```php
+     * $transformer->image('https://example.com/image.jpg', ['inputType' => 'url'])
+     *     ->using($imageProcessor)
+     *     ->transform();
+     * ```
+     * @example Base64 image data:
+     * ```php
+     * $transformer->image($base64Data, ['inputType' => 'base64'])
+     *     ->using($classifier)
+     *     ->transform();
+     * ```
+     * @example Laravel storage disk:
+     * ```php
+     * $transformer->image('images/photo.png', [
+     *     'inputType' => 'storagePath',
+     *     'disk' => 's3'
+     * ])->transform();
+     * ```
+     */
+    public function image(string $path, array $options = []): static;
+
+    /**
+     * Set a document as the content source to be transformed.
+     *
+     * This method accepts document content through various input types (local files,
+     * URLs, text content, binary data, etc.) and processes it using the DocumentTransformerHandler.
+     * The processed document will be converted to base64 format for consistent handling
+     * in the transformation pipeline.
+     *
+     * @param string $path The document path or content, interpreted based on inputType option
+     * @param array $options Configuration options for document processing:
+     *   - inputType (string): How to interpret the $path parameter. Options:
+     *     * 'localPath' (default): Local file system path
+     *     * 'url': HTTP/HTTPS URL to fetch document from
+     *     * 'text': Plain text content (no file processing)
+     *     * 'base64': Base64-encoded document data
+     *     * 'storagePath': Laravel storage disk path (requires 'disk' option)
+     *     * 'rawContent': Raw binary document data (requires 'mimeType' option)
+     *     * 'fileId': External file identifier for cloud storage
+     *   - title (string): Optional document title for metadata
+     *   - mimeType (string): MIME type for rawContent inputType (e.g., 'application/pdf')
+     *   - disk (string): Laravel storage disk name for storagePath inputType
+     *
+     * @return static Returns self for method chaining
+     *
+     * @throws \InvalidArgumentException When inputType is unsupported or required options are missing
+     *
+     * @example Basic local document:
+     * ```php
+     * $transformer->document('/path/to/report.pdf')
+     *     ->using($documentSummarizer)
+     *     ->transform();
+     * ```
+     * @example URL-based document:
+     * ```php
+     * $transformer->document('https://example.com/doc.pdf', ['inputType' => 'url'])
+     *     ->using($documentAnalyzer)
+     *     ->transform();
+     * ```
+     * @example Plain text with title:
+     * ```php
+     * $transformer->document('Document content here', [
+     *     'inputType' => 'text',
+     *     'title' => 'My Document'
+     * ])->transform();
+     * ```
+     * @example Laravel storage with title:
+     * ```php
+     * $transformer->document('reports/annual.pdf', [
+     *     'inputType' => 'storagePath',
+     *     'disk' => 'public',
+     *     'title' => 'Annual Report 2024'
+     * ])->transform();
+     * ```
+     */
+    public function document(string $path, array $options = []): static;
 
     /**
      * Configure the transformer to run asynchronously.
