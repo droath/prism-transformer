@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Facades\Queue;
 use Droath\PrismTransformer\PrismTransformer;
 use Droath\PrismTransformer\Contracts\ContentFetcherInterface;
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
@@ -219,6 +220,7 @@ describe('PrismTransformer Integration', function () {
         });
 
         test('error handling with transformer closure exception', function () {
+            Queue::fake();
             $transformer = app(PrismTransformer::class);
 
             $closure = function ($content) {
