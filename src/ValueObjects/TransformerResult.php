@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Droath\PrismTransformer\ValueObjects;
 
+use Illuminate\Support\Str;
 use Droath\PrismTransformer\Services\ModelSchemaService;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
@@ -180,10 +181,16 @@ readonly class TransformerResult implements Arrayable, Jsonable, JsonSerializabl
     /**
      * Get the transformed content.
      *
-     * @return string|null The transformed content, or null if transformation failed
+     * @return array|string|null The transformed content, or null if transformation failed
+     *
+     * @throws \JsonException
      */
-    public function getContent(): ?string
+    public function getContent(bool $parseJson = false): null|array|string
     {
+        if ($parseJson && Str::isJson($this->data)) {
+            return $this->parseJsonData();
+        }
+
         return $this->data;
     }
 
@@ -251,17 +258,6 @@ readonly class TransformerResult implements Arrayable, Jsonable, JsonSerializabl
     public function isInProgress(): bool
     {
         return $this->status === self::STATUS_IN_PROGRESS;
-    }
-
-    /**
-     * Legacy alias for getContent().
-     *
-     *
-     * @deprecated Use getContent() instead
-     */
-    public function getTransformedContent(): ?string
-    {
-        return $this->getContent();
     }
 
     /**
