@@ -87,7 +87,7 @@ abstract class BaseTransformer implements TransformerInterface
         }
         $this->beforeTransform($content);
 
-        $result = $this->performTransformation($content);
+        $result = $this->performTransformation($content, $context);
 
         if ($result->isSuccessful()) {
             $this->setCache($result);

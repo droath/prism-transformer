@@ -217,7 +217,7 @@ describe('TransformationJob', function () {
             $transformer = mock(TransformerInterface::class);
             $transformer->shouldReceive('execute')
                 ->once()
-                ->with('Test content')
+                ->with('Test content', ['user_id' => 123])
                 ->andReturn($transformerResult);
 
             $content = 'Test content';
@@ -243,7 +243,7 @@ describe('TransformationJob', function () {
             $transformer = mock(TransformerInterface::class);
             $transformer->shouldReceive('execute')
                 ->once()
-                ->with('Test content')
+                ->with('Test content', ['user_id' => 123])
                 ->andThrow($exception);
 
             $content = 'Test content';
@@ -376,7 +376,7 @@ describe('TransformationJob', function () {
         test('handles empty content gracefully', function () {
             $transformer = mock(TransformerInterface::class);
             $transformer->shouldReceive('execute')
-                ->with('')
+                ->with('', ['user_id' => 123])
                 ->andReturn(TransformerResult::successful(''));
 
             $job = new TransformationJob($transformer, '', ['user_id' => 123]);
@@ -390,7 +390,7 @@ describe('TransformationJob', function () {
             $largeContent = str_repeat('A', 10000); // 10KB content
             $transformer = mock(TransformerInterface::class);
             $transformer->shouldReceive('execute')
-                ->with($largeContent)
+                ->with($largeContent, [])
                 ->andReturn(TransformerResult::successful('Summarized'));
 
             $job = new TransformationJob($transformer, $largeContent, []);

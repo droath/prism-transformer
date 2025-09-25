@@ -91,11 +91,11 @@ class TransformationJob implements ShouldQueue
             $result = null;
 
             if (is_callable($this->handler)) {
-                $result = ($this->handler)($this->content);
+                $result = ($this->handler)($this->content, $this->context);
             }
 
             if ($this->handler instanceof TransformerInterface) {
-                $result = $this->handler->execute($this->content);
+                $result = $this->handler->execute($this->content, $this->context);
             }
 
             if (! $result instanceof TransformerResult) {

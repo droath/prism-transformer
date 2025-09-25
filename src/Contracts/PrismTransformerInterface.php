@@ -200,7 +200,7 @@ interface PrismTransformerInterface
      *
      * @param \Closure|string|TransformerInterface $transformer
      *   The transformer to use.
-     *     - Closure: function (string $content): TransformerResult
+     *     - Closure: function (string $content, array $context = []): TransformerResult
      *     - string: Custom transformer classname
      *     - TransformerInterface: Direct transformer instance
      *

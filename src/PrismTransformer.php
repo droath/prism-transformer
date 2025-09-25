@@ -20,9 +20,9 @@ use Illuminate\Foundation\Bus\PendingDispatch;
  *
  * This class serves as the primary entry point for the PrismTransformer
  * package, offering a fluent interface for setting up and executing AI-powered
- * content transformations. It supports text content, URL-based content fetching,
- * image processing, and document processing with customizable transformers and
- * asynchronous processing capabilities.
+ * content transformations. It supports text content, URL-based content
+ * fetching, image processing, and document processing with customizable
+ * transformers and asynchronous processing capabilities.
  *
  * The class follows the Builder pattern, allowing method chaining for an
  * intuitive API:
@@ -105,7 +105,7 @@ class PrismTransformer implements PrismTransformerInterface
      * The transformer handler to use for content processing.
      *
      * Can be either:
-     *   - A Closure that accepts string content and returns TransformerResult
+     *   - A Closure that accepts string content and optional context array, returns TransformerResult
      *   - A transform classname that resolves to TransformerInterface
      *   - A TransformerInterface instance
      *   - null if no transformer has been configured yet
@@ -251,7 +251,7 @@ class PrismTransformer implements PrismTransformerInterface
         return TransformationJob::dispatch(
             $handler,
             $this->content ?? '',
-            $this->context
+            $this->buildContext()
         );
     }
 
@@ -280,7 +280,10 @@ class PrismTransformer implements PrismTransformerInterface
      */
     protected function buildContext(): array
     {
-        return ['input' => $this->input];
+        return [
+            'input' => $this->input,
+            ...$this->context,
+        ];
     }
 
     /**
