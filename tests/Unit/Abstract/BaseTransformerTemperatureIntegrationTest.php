@@ -32,7 +32,7 @@ describe('BaseTransformer Temperature Integration', function () {
                 }
 
                 // Override performTransformation to test the integration
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     // Verify that temperature() method is called and returns expected value
                     $temperature = $this->temperature();
@@ -68,7 +68,7 @@ describe('BaseTransformer Temperature Integration', function () {
                 }
 
                 // Override performTransformation to test the integration
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     // Verify that temperature() method returns null
                     $temperature = $this->temperature();
@@ -125,7 +125,7 @@ describe('BaseTransformer Temperature Integration', function () {
                         return $this->testTemperature;
                     }
 
-                    protected function performTransformation(string $content): TransformerResult
+                    protected function performTransformation(string $content, array $context = []): TransformerResult
                     {
                         $temperature = $this->temperature();
 
@@ -176,7 +176,7 @@ describe('BaseTransformer Temperature Integration', function () {
                     ];
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     // Verify temperature configuration
                     $temperature = $this->temperature();
@@ -241,7 +241,7 @@ describe('BaseTransformer Temperature Integration', function () {
                         return $this->testTemperature;
                     }
 
-                    protected function performTransformation(string $content): TransformerResult
+                    protected function performTransformation(string $content, array $context = []): TransformerResult
                     {
                         $temperature = $this->temperature();
 
@@ -284,7 +284,7 @@ describe('BaseTransformer Temperature Integration', function () {
                     return 0.3; // Low temperature
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     return TransformerResult::successful('Result with temperature 0.3');
                 }
@@ -302,7 +302,7 @@ describe('BaseTransformer Temperature Integration', function () {
                     return 1.5; // High temperature
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     return TransformerResult::successful('Result with temperature 1.5');
                 }
@@ -336,7 +336,7 @@ describe('BaseTransformer Temperature Integration', function () {
                     return null; // Use provider default
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     return TransformerResult::successful('Result with null temperature');
                 }
@@ -354,7 +354,7 @@ describe('BaseTransformer Temperature Integration', function () {
                     return 0.7; // Specific temperature
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     return TransformerResult::successful('Result with temperature 0.7');
                 }

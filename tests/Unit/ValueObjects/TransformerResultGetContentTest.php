@@ -104,7 +104,7 @@ describe('TransformerResult getContent() method', function () {
                 model: 'test-model',
                 provider: Provider::OPENAI,
                 transformerClass: 'TestTransformer',
-                content: 'Original input content'
+                context: ['source' => 'Original input content']
             );
 
             $jsonData = ['name' => 'Output content'];
@@ -112,7 +112,7 @@ describe('TransformerResult getContent() method', function () {
 
             $rawContent = $result->getContent(parseJson: false);
             $parsedContent = $result->getContent(parseJson: true);
-            $originalContent = $result->getMetadata()?->content;
+            $originalContent = $result->getMetadata()?->context['source'] ?? null;
 
             expect($rawContent)->toBeString();
             expect($parsedContent)->toBeArray();
@@ -140,9 +140,9 @@ describe('TransformerResult getContent() method', function () {
                     'name' => 'John Doe',
                     'profile' => [
                         'bio' => 'Software Developer',
-                        'skills' => ['PHP', 'Laravel', 'JavaScript']
-                    ]
-                ]
+                        'skills' => ['PHP', 'Laravel', 'JavaScript'],
+                    ],
+                ],
             ];
             $jsonString = json_encode($jsonData);
             $result = TransformerResult::successful($jsonString);

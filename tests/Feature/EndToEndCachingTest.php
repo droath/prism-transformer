@@ -57,7 +57,7 @@ describe('End-to-End Caching Integration', function () {
                     return 'Transform this content';
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     $this->transformationCallCount++;
 
@@ -133,7 +133,7 @@ describe('End-to-End Caching Integration', function () {
                     return 'Transform content from URL 1';
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     $this->transformationCallCount++;
 
@@ -157,7 +157,7 @@ describe('End-to-End Caching Integration', function () {
                     return 'Transform content from URL 2';
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     $this->transformationCallCount++;
 
@@ -242,7 +242,7 @@ describe('End-to-End Caching Integration', function () {
                     return 'Transform this content';
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     $this->transformationCallCount++;
 
@@ -312,7 +312,7 @@ describe('End-to-End Caching Integration', function () {
                     return 'First transformer prompt';
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     return TransformerResult::successful(
                         "First: {$content}",
@@ -332,7 +332,7 @@ describe('End-to-End Caching Integration', function () {
                     return 'Second transformer prompt';
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     return TransformerResult::successful(
                         "Second: {$content}",
@@ -380,7 +380,7 @@ describe('End-to-End Caching Integration', function () {
                     return 'claude-3-sonnet';
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     return TransformerResult::successful(
                         "Processed: {$content}",

@@ -77,7 +77,7 @@ abstract class BaseTransformer implements TransformerInterface
     /**
      * {@inheritDoc}
      */
-    public function execute(string $content): TransformerResult
+    public function execute(string $content, array $context = []): TransformerResult
     {
         if (
             ($result = $this->getCache())
@@ -380,9 +380,11 @@ abstract class BaseTransformer implements TransformerInterface
      * @return TransformerResult
      *   The transformation results with data and metadata.
      */
-    protected function performTransformation(string $content): TransformerResult
+    protected function performTransformation(string $content, array $context = []): TransformerResult
     {
         try {
+            $context['source'] = $content;
+
             $response = $this->makeRequest($content);
 
             return TransformerResult::successful(
@@ -391,7 +393,7 @@ abstract class BaseTransformer implements TransformerInterface
                     $this->model(),
                     $this->provider(),
                     static::class,
-                    $content
+                    $context,
                 )
             );
         } catch (\Throwable $e) {
@@ -401,7 +403,7 @@ abstract class BaseTransformer implements TransformerInterface
                     $this->model(),
                     $this->provider(),
                     static::class,
-                    $content
+                    $context
                 )
             );
         }

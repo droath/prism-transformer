@@ -14,7 +14,7 @@ class SimpleAsyncTransformer implements TransformerInterface
         return 'Transform the content for testing purposes';
     }
 
-    public function execute(?string $content): TransformerResult
+    public function execute(string $content, array $context = []): TransformerResult
     {
         return TransformerResult::successful('simple async: '.$content);
     }

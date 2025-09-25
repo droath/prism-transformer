@@ -80,5 +80,5 @@ interface TransformerInterface
      * }
      * ```
      */
-    public function execute(string $content): TransformerResult;
+    public function execute(string $content, array $context = []): TransformerResult;
 }

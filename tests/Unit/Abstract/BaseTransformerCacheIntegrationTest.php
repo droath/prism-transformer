@@ -23,7 +23,7 @@ describe('BaseTransformer Cache Integration', function () {
                 return 'Transform this test content';
             }
 
-            protected function performTransformation(string $content): TransformerResult
+            protected function performTransformation(string $content, array $context = []): TransformerResult
             {
                 // Increment counter to track how many times transformation is called
                 $this->transformationCount++;
@@ -146,7 +146,7 @@ describe('BaseTransformer Cache Integration', function () {
                     return 'First transformer prompt';
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     $this->transformationCount++;
 
@@ -163,7 +163,7 @@ describe('BaseTransformer Cache Integration', function () {
                     return 'Second transformer prompt';
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     $this->transformationCount++;
 
@@ -207,7 +207,7 @@ describe('BaseTransformer Cache Integration', function () {
                     return Provider::OPENAI;
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     $this->transformationCount++;
 
@@ -229,7 +229,7 @@ describe('BaseTransformer Cache Integration', function () {
                     return Provider::ANTHROPIC;
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     $this->transformationCount++;
 

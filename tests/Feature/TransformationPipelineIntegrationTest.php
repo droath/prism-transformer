@@ -50,7 +50,7 @@ describe('Complete Transformation Pipeline Integration', function () {
                     return 'Test prompt';
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     $transformed = "Transformed: {$content} with {$this->model()}";
 
@@ -77,7 +77,7 @@ describe('Complete Transformation Pipeline Integration', function () {
                     return 'Test prompt';
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     $transformed = "Transformed: {$content} with {$this->model()}";
 
@@ -118,7 +118,7 @@ describe('Complete Transformation Pipeline Integration', function () {
                     return 'URL transformation prompt';
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     return TransformerResult::successful('Transformed URL content');
                 }
@@ -149,7 +149,7 @@ describe('Complete Transformation Pipeline Integration', function () {
                     return 'Uppercase transformation prompt';
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     // Create metadata to include with result
                     $metadata = TransformerMetadata::make(
@@ -186,7 +186,7 @@ describe('Complete Transformation Pipeline Integration', function () {
                     return 'Async transformation prompt';
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     return TransformerResult::successful("Async: {$content}");
                 }
@@ -217,7 +217,7 @@ describe('Complete Transformation Pipeline Integration', function () {
                     return 'Uppercase prompt';
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     return TransformerResult::successful(strtoupper($content));
                 }
@@ -231,7 +231,7 @@ describe('Complete Transformation Pipeline Integration', function () {
                     return 'Prefix prompt';
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     return TransformerResult::successful("TRANSFORMED: {$content}");
                 }
@@ -266,7 +266,7 @@ describe('Complete Transformation Pipeline Integration', function () {
                     return 'Error prompt';
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     throw new \Exception('Transformation failed');
                 }
@@ -290,7 +290,7 @@ describe('Complete Transformation Pipeline Integration', function () {
                     return 'Content validation prompt';
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     if (empty($content)) {
                         return TransformerResult::failed(['Empty content provided']);
@@ -335,7 +335,7 @@ describe('Complete Transformation Pipeline Integration', function () {
                     return 'OpenAI transformation prompt';
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     $temp = $this->provider()->getConfigValue('temperature', 0.7);
 
@@ -364,7 +364,7 @@ describe('Complete Transformation Pipeline Integration', function () {
                     return 'Anthropic transformation prompt';
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     $maxTokens = $this->provider()->getConfigValue('max_tokens', 4096);
 
@@ -393,7 +393,7 @@ describe('Complete Transformation Pipeline Integration', function () {
                     return 'Ollama transformation prompt';
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     $baseUrl = $this->provider()->getConfigValue('base_url');
                     $timeout = $this->provider()->getConfigValue('timeout', 120);
@@ -447,7 +447,7 @@ describe('Complete Transformation Pipeline Integration', function () {
                     return 'Configuration service prompt';
                 }
 
-                protected function performTransformation(string $content): TransformerResult
+                protected function performTransformation(string $content, array $context = []): TransformerResult
                 {
                     // Access configuration service
                     $provider = $this->configuration->getDefaultProvider();

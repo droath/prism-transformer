@@ -79,6 +79,11 @@ class PrismTransformer implements PrismTransformerInterface
     protected bool $async = false;
 
     /**
+     * The input source for the transformation.
+     */
+    protected ?string $input = null;
+
+    /**
      * The content to be transformed.
      *
      * This can be set directly via text() or populated by fetching from a URL
@@ -131,6 +136,7 @@ class PrismTransformer implements PrismTransformerInterface
         string $url,
         ?ContentFetcherInterface $fetcher = null
     ): static {
+        $this->input = $url;
         $this->content = (new UrlTransformerHandler($url, $fetcher))->handle();
 
         return $this;
@@ -141,6 +147,7 @@ class PrismTransformer implements PrismTransformerInterface
      */
     public function image(string $path, array $options = []): static
     {
+        $this->input = $path;
         $this->content = (new ImageTransformerHandler($path, $options))->handle();
 
         return $this;
@@ -151,6 +158,7 @@ class PrismTransformer implements PrismTransformerInterface
      */
     public function document(string $path, array $options = []): static
     {
+        $this->input = $path;
         $this->content = (new DocumentTransformerHandler($path, $options))->handle();
 
         return $this;
@@ -252,15 +260,27 @@ class PrismTransformer implements PrismTransformerInterface
      */
     protected function handleSyncTransformation($handler): ?TransformerResult
     {
+        $context = $this->buildContext();
+
         if (is_callable($handler)) {
-            return $handler($this->content);
+            return $handler($this->content, $context);
         }
 
         if ($handler instanceof TransformerInterface) {
-            return $handler->execute($this->content);
+            return $handler->execute($this->content, $context);
         }
 
         return null;
+    }
+
+    /**
+     * Define the context data to be passed to the transformer.
+     *
+     * @return null[]|string[]
+     */
+    protected function buildContext(): array
+    {
+        return ['input' => $this->input];
     }
 
     /**
