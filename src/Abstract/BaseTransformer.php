@@ -390,7 +390,8 @@ abstract class BaseTransformer implements TransformerInterface
                 TransformerMetadata::make(
                     $this->model(),
                     $this->provider(),
-                    static::class
+                    static::class,
+                    $content
                 )
             );
         } catch (\Throwable $e) {
@@ -399,7 +400,8 @@ abstract class BaseTransformer implements TransformerInterface
                 TransformerMetadata::make(
                     $this->model(),
                     $this->provider(),
-                    static::class
+                    static::class,
+                    $content
                 )
             );
         }

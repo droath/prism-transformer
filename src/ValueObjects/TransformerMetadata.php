@@ -20,6 +20,7 @@ readonly class TransformerMetadata implements Arrayable, Jsonable, JsonSerializa
         public string $model,
         public Provider $provider,
         public ?string $transformerClass,
+        public ?string $content,
     ) {
         $this->timestamp = now()->toISOString();
     }
@@ -27,12 +28,14 @@ readonly class TransformerMetadata implements Arrayable, Jsonable, JsonSerializa
     public static function make(
         string $model,
         Provider $provider,
-        ?string $transformerClass = null
+        ?string $transformerClass = null,
+        ?string $content = null
     ): self {
         return new self(
             $model,
             $provider,
             $transformerClass,
+            $content,
         );
     }
 
@@ -42,6 +45,7 @@ readonly class TransformerMetadata implements Arrayable, Jsonable, JsonSerializa
             model: $data['model'] ?? '',
             provider: $data['provider'] ?? '',
             transformerClass: $data['transformerClass'] ?? null,
+            content: $data['content'] ?? null,
         );
     }
 
@@ -51,6 +55,7 @@ readonly class TransformerMetadata implements Arrayable, Jsonable, JsonSerializa
             'model' => $this->model,
             'provider' => $this->provider,
             'timestamp' => $this->timestamp,
+            'content' => $this->content,
         ];
     }
 
