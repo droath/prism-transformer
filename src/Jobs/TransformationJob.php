@@ -128,9 +128,9 @@ class TransformationJob implements ShouldQueue
      * Laravel calls this method when the job fails after all retry attempts
      * have been exhausted.
      *
-     * @param \Exception $exception The exception that caused the failure
+     * @param \Throwable $exception The exception that caused the failure
      */
-    public function failed(\Exception $exception): void
+    public function failed(\Throwable $exception): void
     {
         $handlerType = match (true) {
             $this->handler instanceof \Closure, $this->handler instanceof SerializableClosure => 'Closure',
