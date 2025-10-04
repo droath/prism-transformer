@@ -205,4 +205,24 @@ class ConfigurationService
     {
         return (bool) config('prism-transformer.rate_limiting.enabled', true);
     }
+
+    /**
+     * Get blocked domains for content fetching.
+     *
+     * @return array<int, string> List of blocked domain patterns.
+     */
+    public function getBlockedDomains(): array
+    {
+        return (array) config('prism-transformer.content_fetcher.validation.blocked_domains', []);
+    }
+
+    /**
+     * Get allowed URL schemes for content fetching.
+     *
+     * @return array<int, string> List of allowed URL schemes.
+     */
+    public function getAllowedSchemes(): array
+    {
+        return (array) config('prism-transformer.content_fetcher.validation.allowed_schemes', ['http', 'https']);
+    }
 }

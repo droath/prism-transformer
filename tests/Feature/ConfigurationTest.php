@@ -234,12 +234,12 @@ describe('Configuration', function () {
             $validationConfig = config('prism-transformer.content_fetcher.validation');
 
             expect($validationConfig)->toBeArray();
-            expect($validationConfig)->toHaveKey('max_content_length');
+            expect($validationConfig)->toHaveKey('blocked_domains');
             expect($validationConfig)->toHaveKey('allowed_schemes');
-            expect($validationConfig)->toHaveKey('allow_localhost');
 
             expect($validationConfig['allowed_schemes'])->toContain('http');
             expect($validationConfig['allowed_schemes'])->toContain('https');
+            expect($validationConfig['blocked_domains'])->toBeArray();
         });
     });
 

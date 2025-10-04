@@ -201,7 +201,8 @@ class BasicHttpFetcher extends BaseContentFetcher
         return $this->hasValidStructure($urlParsed)
             && $this->hasAllowedScheme($urlParsed)
             && $this->hasSecureHost($urlParsed)
-            && $this->hasValidPath($urlParsed);
+            && $this->hasValidPath($urlParsed)
+            && $this->isNotBlockedDomain($urlParsed);
     }
 
     /**
@@ -233,11 +234,14 @@ class BasicHttpFetcher extends BaseContentFetcher
     }
 
     /**
-     * Check if URL uses allowed HTTP/HTTPS schemes only.
+     * Check if URL uses allowed schemes from configuration.
      */
     protected function hasAllowedScheme(array $parsed): bool
     {
-        return in_array(strtolower($parsed['scheme']), ['http', 'https'], true);
+        $allowedSchemes = $this->configuration?->getAllowedSchemes() ?? ['http', 'https'];
+        $normalizedAllowedSchemes = array_map('strtolower', $allowedSchemes);
+
+        return in_array(strtolower($parsed['scheme']), $normalizedAllowedSchemes, true);
     }
 
     /**
@@ -291,5 +295,48 @@ class BasicHttpFetcher extends BaseContentFetcher
         }
 
         return $url;
+    }
+
+    /**
+     * Check if the domain is not in the blocked domains list.
+     *
+     * Supports exact matches and wildcard patterns (e.g., '*.example.com').
+     *
+     * @param array $parsed Parsed URL components
+     *
+     * @return bool True if domain is not blocked, false if it is blocked
+     */
+    protected function isNotBlockedDomain(array $parsed): bool
+    {
+        if (! isset($parsed['host'])) {
+            return true;
+        }
+
+        $blockedDomains = $this->configuration?->getBlockedDomains() ?? [];
+
+        if (empty($blockedDomains)) {
+            return true;
+        }
+
+        $host = strtolower($parsed['host']);
+
+        foreach ($blockedDomains as $blockedDomain) {
+            $blockedDomain = strtolower(trim($blockedDomain));
+
+            // Exact match
+            if ($host === $blockedDomain) {
+                return false;
+            }
+
+            // Wildcard pattern support (e.g., '*.example.com')
+            if (str_starts_with($blockedDomain, '*.')) {
+                $pattern = substr($blockedDomain, 2); // Remove '*.'
+                if (str_ends_with($host, '.'.$pattern) || $host === $pattern) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 }

@@ -123,8 +123,6 @@ return [
         'validation' => [
             'blocked_domains' => [],
             'allowed_schemes' => ['http', 'https'],
-            'allow_localhost' => env('PRISM_TRANSFORMER_ALLOW_LOCALHOST', false),
-            'max_content_length' => env('PRISM_TRANSFORMER_MAX_CONTENT_LENGTH', 10485760), // 10MB
         ],
     ],
 
