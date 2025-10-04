@@ -18,9 +18,13 @@ caching, automatic schema generation, and robust error handling.
   Mistral, DeepSeek, xAI, OpenRouter, VoyageAI, ElevenLabs
 - **🚀 Fluent Interface**: Chainable methods for intuitive transformation
   workflows
-- **📄 Content Sources**: Transform text content directly or fetch from URLs
-- **⚡ Intelligent Caching**: Multi-layer caching for content fetching and
+- **📄 Content Sources**: Transform text, URLs, images, and documents
+- **🖼️ Media Input Support**: Native support for image and document
+  transformation with AI vision
+- **⚡ Intelligent Caching**: Two-layer caching system for content fetching and
   transformation results
+- **🔄 Async Processing**: Queue transformations for background processing with
+  Laravel queues
 - **🛠️ Custom Transformers**: Create reusable transformation classes with
   dependency injection
 - **🎯 Laravel Model Output**: Direct transformation to Laravel Eloquent models
@@ -28,10 +32,11 @@ caching, automatic schema generation, and robust error handling.
 - **🔧 Laravel Integration**: Service provider, facades, configuration, and
   Artisan commands
 - **✅ Validation Support**: Built-in Laravel validation integration
+- **🛡️ Security Features**: Blocked domains protection for content fetching
 - **🏗️ Service-Oriented Architecture**: Clean separation of concerns with
   dedicated services
-- **🎯 Error Handling**: Comprehensive exception system with transformation
-  context
+- **🎯 Error Handling**: Comprehensive Throwable-based exception system with
+  transformation context
 - **📊 Performance Optimized**: Efficient algorithms and configurable timeout
   settings
 
@@ -70,9 +75,17 @@ ANTHROPIC_API_KEY=your-anthropic-api-key
 GROQ_API_KEY=your-groq-api-key
 
 # Caching (optional)
-PRISM_TRANSFORMER_CACHE_ENABLED=true
+PRISM_TRANSFORMER_CACHE_CONTENT_ENABLED=true
+PRISM_TRANSFORMER_CACHE_RESULTS_ENABLED=true
 PRISM_TRANSFORMER_CACHE_TTL_CONTENT=1800
-PRISM_TRANSFORMER_CACHE_TTL_TRANSFORMATIONS=3600
+PRISM_TRANSFORMER_CACHE_TTL_RESULTS=3600
+PRISM_TRANSFORMER_CACHE_STORE=redis
+
+# Async Queue (optional)
+PRISM_TRANSFORMER_ASYNC_QUEUE=default
+PRISM_TRANSFORMER_QUEUE_CONNECTION=redis
+PRISM_TRANSFORMER_TIMEOUT=60
+PRISM_TRANSFORMER_TRIES=3
 ```
 
 ### Provider Configuration
@@ -170,12 +183,125 @@ $result = $transformer
     ->transform();
 ```
 
+### Media Input Transformation
+
+Transform images and documents with AI vision and document analysis:
+
+```php
+use Droath\PrismTransformer\PrismTransformer;
+
+// Image transformation
+$result = (new PrismTransformer())
+    ->image('/path/to/image.jpg')
+    ->using($imageAnalyzer)
+    ->transform();
+
+// Document transformation
+$result = (new PrismTransformer())
+    ->document('/path/to/document.pdf')
+    ->using($documentExtractor)
+    ->transform();
+
+// You can also pass metadata
+$result = (new PrismTransformer())
+    ->image('/path/to/photo.png', ['title' => 'Product Photo'])
+    ->using($productAnalyzer)
+    ->transform();
+```
+
+The media input methods automatically handle:
+
+- **File reading and encoding**: Converts files to base64 for AI processing
+- **Media type detection**: Automatically determines image vs document types
+- **Proper serialization**: Works with both sync and async transformations
+
+### Async Transformations
+
+Queue transformations for background processing using Laravel's queue system:
+
+```php
+use Droath\PrismTransformer\PrismTransformer;
+
+// Async text transformation
+$pendingDispatch = (new PrismTransformer())
+    ->text('Long content to process...')
+    ->async()
+    ->using($summarizer)
+    ->transform();
+
+// Async URL transformation
+$pendingDispatch = (new PrismTransformer())
+    ->url('https://example.com/article')
+    ->async()
+    ->using($contentAnalyzer)
+    ->transform();
+
+// Async image transformation
+$pendingDispatch = (new PrismTransformer())
+    ->image('/path/to/image.jpg')
+    ->async()
+    ->using($imageDescriber)
+    ->transform();
+
+// The transform() method returns a PendingDispatch instance
+// The job will be processed by your queue worker
+```
+
+**Async with Context:**
+
+```php
+$pendingDispatch = (new PrismTransformer())
+    ->setContext(['user_id' => auth()->id(), 'tenant_id' => 123])
+    ->text('Content to transform')
+    ->async()
+    ->using($transformer)
+    ->transform();
+```
+
+**Async with Closures:**
+
+Closures are automatically serialized for queue processing and properly handle
+Media objects:
+
+```php
+// Works with both string and Media input
+$pendingDispatch = (new PrismTransformer())
+    ->image('/path/to/image.jpg')
+    ->async()
+    ->using(function ($content) {
+        // $content will be a Media object (Image instance)
+        // Properly handle both types
+        $data = is_string($content) ? $content : $content->base64();
+
+        return TransformerResult::successful("Processed: {$data}");
+    })
+    ->transform();
+```
+
+**Queue Configuration:**
+
+```php
+// config/prism-transformer.php
+'transformation' => [
+    'async_queue' => env('PRISM_TRANSFORMER_ASYNC_QUEUE', 'default'),
+    'queue_connection' => env('PRISM_TRANSFORMER_QUEUE_CONNECTION'),
+    'timeout' => env('PRISM_TRANSFORMER_TIMEOUT', 60),
+    'tries' => env('PRISM_TRANSFORMER_TRIES', 3),
+],
+```
+
 ### Using the Facade
 
 ```php
 use Droath\PrismTransformer\Facades\PrismTransformer;
 
 $result = PrismTransformer::text('Content to transform')
+    ->using($transformer)
+    ->transform();
+
+// Async with facade
+$pendingDispatch = PrismTransformer::text('Content to transform')
+    ->async()
     ->using($transformer)
     ->transform();
 ```
@@ -627,29 +753,58 @@ The model integration uses a clean service-oriented approach:
 
 ## Caching System
 
-The package includes a sophisticated two-layer caching system:
+The package includes a sophisticated two-layer caching system to optimize
+performance and reduce API costs:
 
-### Content Fetch Caching
+### Two-Layer Cache Architecture
+
+1. **Content Fetch Cache**: Caches raw content from URLs and files
+2. **Transformer Results Cache**: Caches AI transformation results
+
+This separation allows you to:
+
+- Reuse fetched content across different transformers
+- Cache expensive AI transformations independently
+- Control cache TTL separately for each layer
+
+### Configuration
 
 ```php
-// Configure in config/prism-transformer.php
+// config/prism-transformer.php
 'cache' => [
-    'ttl' => [
-        'content_fetch' => 1800, // 30 minutes for fetched content
-        'transformer_data' => 3600, // 1 hour for transformation results
+    'store' => env('PRISM_TRANSFORMER_CACHE_STORE', 'default'),
+    'prefix' => env('PRISM_TRANSFORMER_CACHE_PREFIX', 'prism_transformer'),
+
+    'content_fetch' => [
+        'enabled' => env('PRISM_TRANSFORMER_CACHE_CONTENT_ENABLED', false),
+        'ttl' => env('PRISM_TRANSFORMER_CACHE_TTL_CONTENT', 1800), // 30 minutes
     ],
-];
+
+    'transformer_results' => [
+        'enabled' => env('PRISM_TRANSFORMER_CACHE_RESULTS_ENABLED', false),
+        'ttl' => env('PRISM_TRANSFORMER_CACHE_TTL_RESULTS', 3600), // 1 hour
+    ],
+],
 ```
+
+### Cache Keys
+
+Cache keys are intelligently generated based on:
+
+- **Content fetch cache**: URL + fetch options
+- **Transformer results cache**: Content + context + transformer configuration
+
+This ensures accurate cache hits while avoiding false positives.
 
 ### Cache Usage Examples
 
 ```php
-// First call - fetches and caches URL content and transformation
+// First call - fetches content and performs transformation, caches both
 $result1 = PrismTransformer::url('https://news.site.com/article')
     ->using($summarizer)
     ->transform();
 
-// Second call - uses cached content and transformation
+// Second call - uses both cached content AND cached transformation
 $result2 = PrismTransformer::url('https://news.site.com/article')
     ->using($summarizer)
     ->transform(); // Much faster!
@@ -657,7 +812,28 @@ $result2 = PrismTransformer::url('https://news.site.com/article')
 // Different transformer, same URL - uses cached content, new transformation
 $result3 = PrismTransformer::url('https://news.site.com/article')
     ->using($translator)
-    ->transform(); // Faster content fetch, new transformation
+    ->transform(); // Skips HTTP fetch, performs new AI transformation
+
+// Different context invalidates transformer cache
+$result4 = PrismTransformer::url('https://news.site.com/article')
+    ->setContext(['language' => 'es'])
+    ->using($summarizer)
+    ->transform(); // Uses cached content, new transformation with context
+```
+
+### Environment Configuration
+
+```env
+# Enable/disable caching
+PRISM_TRANSFORMER_CACHE_CONTENT_ENABLED=true
+PRISM_TRANSFORMER_CACHE_RESULTS_ENABLED=true
+
+# Cache TTL in seconds
+PRISM_TRANSFORMER_CACHE_TTL_CONTENT=1800
+PRISM_TRANSFORMER_CACHE_TTL_RESULTS=3600
+
+# Use Redis for better performance (optional)
+PRISM_TRANSFORMER_CACHE_STORE=redis
 ```
 
 ## Content Fetchers
@@ -680,9 +856,42 @@ $result = PrismTransformer::url('https://api.example.com/data', $customFetcher)
     ->transform();
 ```
 
+### Blocked Domains
+
+Protect your application from fetching content from untrusted or malicious
+domains:
+
+```php
+// config/prism-transformer.php
+'content_fetcher' => [
+    'validation' => [
+        'blocked_domains' => [
+            'malicious-site.com',
+            '*.spam-domain.net',  // Wildcard pattern
+            'internal.local',
+        ],
+        'allowed_schemes' => ['http', 'https'],
+    ],
+],
+```
+
+The blocked domains feature supports:
+
+- **Exact domain matching**: `example.com` blocks only that specific domain
+- **Wildcard patterns**: `*.example.com` blocks all subdomains
+- **Automatic validation**: Blocked URLs will throw a `FetchException`
+
+```php
+// This will throw FetchException
+$result = PrismTransformer::url('https://malicious-site.com/content')
+    ->using($transformer)
+    ->transform(); // Throws: FetchException
+```
+
 ## Error Handling
 
-The package provides comprehensive error handling:
+The package provides comprehensive error handling with support for both
+exceptions and PHP errors using `\Throwable`:
 
 ```php
 $result = PrismTransformer::text('problematic content')
@@ -708,10 +917,163 @@ if ($result->isSuccessful()) {
 ### Exception Types
 
 - `TransformerException`: General transformation errors
-- `FetchException`: Content fetching failures
+- `FetchException`: Content fetching failures (including blocked domains)
 - `ValidationException`: Input validation errors
 - `InvalidInputException`: Invalid input data
-- `UnsupportedTypeException`: Unsupported content types
+- `RateLimitExceededException`: Rate limit exceeded errors
+
+### Throwable Support
+
+The package uses `\Throwable` instead of `\Exception` in error handling to catch
+both user-defined exceptions and PHP internal errors (like `TypeError`). This is
+particularly important for:
+
+- **Queue job failure handlers**: Jobs can fail due to type errors in PHP 8.3+
+- **Event dispatching**: `TransformationFailed` event accepts any throwable
+- **Robust error handling**: Catches all error types, not just exceptions
+
+```php
+use Droath\PrismTransformer\Events\TransformationFailed;
+
+// Listen for transformation failures
+Event::listen(TransformationFailed::class, function (TransformationFailed $event) {
+    // $event->exception is \Throwable (catches both Exception and Error)
+    Log::error('Transformation failed', [
+        'error' => $event->exception->getMessage(),
+        'type' => get_class($event->exception),
+        'content' => $event->content,
+        'context' => $event->context,
+    ]);
+});
+```
+
+## Events
+
+The package dispatches events throughout the transformation lifecycle, allowing
+you to hook into the process for monitoring, logging, and custom handling:
+
+### Available Events
+
+#### TransformationStarted
+
+Dispatched when a transformation begins (sync or async):
+
+```php
+use Droath\PrismTransformer\Events\TransformationStarted;
+
+Event::listen(TransformationStarted::class, function (TransformationStarted $event) {
+    Log::info('Transformation started', [
+        'content_preview' => is_string($event->content)
+            ? substr($event->content, 0, 50)
+            : get_class($event->content),
+        'context' => $event->context,
+    ]);
+});
+```
+
+**Event Properties:**
+
+- `content` (string|Media|null): The content being transformed
+- `context` (array): Additional context data
+
+#### TransformationCompleted
+
+Dispatched when a transformation completes successfully:
+
+```php
+use Droath\PrismTransformer\Events\TransformationCompleted;
+
+Event::listen(TransformationCompleted::class, function (TransformationCompleted $event) {
+    Log::info('Transformation completed', [
+        'success' => $event->result->isSuccessful(),
+        'provider' => $event->result->getMetadata()?->provider->value,
+        'model' => $event->result->getMetadata()?->model,
+        'context' => $event->context,
+    ]);
+
+    // Track metrics, send notifications, etc.
+    Metrics::increment('transformations.success');
+});
+```
+
+**Event Properties:**
+
+- `result` (TransformerResult): The transformation result
+- `context` (array): Additional context data
+
+#### TransformationFailed
+
+Dispatched when a transformation fails:
+
+```php
+use Droath\PrismTransformer\Events\TransformationFailed;
+
+Event::listen(TransformationFailed::class, function (TransformationFailed $event) {
+    Log::error('Transformation failed', [
+        'error' => $event->exception->getMessage(),
+        'error_type' => get_class($event->exception),
+        'content' => $event->content,
+        'context' => $event->context,
+    ]);
+
+    // Send alert, track metrics, etc.
+    if ($event->context['user_id'] ?? null) {
+        Notification::send(
+            User::find($event->context['user_id']),
+            new TransformationFailedNotification($event->exception)
+        );
+    }
+});
+```
+
+**Event Properties:**
+
+- `exception` (\Throwable): The exception that caused the failure
+- `content` (string|Media|null): The content being transformed
+- `context` (array): Additional context data
+
+### Event Usage Examples
+
+**Monitor All Transformations:**
+
+```php
+// In EventServiceProvider
+protected $listen = [
+    TransformationStarted::class => [
+        LogTransformationStart::class,
+        TrackTransformationMetrics::class,
+    ],
+    TransformationCompleted::class => [
+        LogTransformationComplete::class,
+        UpdateUserCredits::class,
+    ],
+    TransformationFailed::class => [
+        LogTransformationFailure::class,
+        SendAdminAlert::class,
+    ],
+];
+```
+
+**Context-Aware Event Handling:**
+
+```php
+// Pass context for better tracking
+$result = PrismTransformer::text($content)
+    ->setContext([
+        'user_id' => auth()->id(),
+        'request_id' => request()->id(),
+        'feature' => 'article_summarization',
+    ])
+    ->using($summarizer)
+    ->transform();
+
+// Event listener can use context
+Event::listen(TransformationCompleted::class, function ($event) {
+    if ($event->context['feature'] === 'article_summarization') {
+        // Feature-specific handling
+    }
+});
+```
 
 ## Testing
 
