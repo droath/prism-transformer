@@ -6,6 +6,7 @@ namespace Droath\PrismTransformer\Tests\Stubs;
 
 use Droath\PrismTransformer\Contracts\TransformerInterface;
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
+use Prism\Prism\ValueObjects\Media\Media;
 
 class SimpleAsyncTransformer implements TransformerInterface
 {
@@ -14,8 +15,10 @@ class SimpleAsyncTransformer implements TransformerInterface
         return 'Transform the content for testing purposes';
     }
 
-    public function execute(string $content, array $context = []): TransformerResult
+    public function execute(string|Media $content, array $context = []): TransformerResult
     {
-        return TransformerResult::successful('simple async: '.$content);
+        $contentStr = is_string($content) ? $content : 'media object';
+
+        return TransformerResult::successful('simple async: '.$contentStr);
     }
 }

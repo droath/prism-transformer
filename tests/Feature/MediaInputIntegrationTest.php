@@ -43,8 +43,7 @@ describe('Media Input Integration', function () {
             $content = $contentProperty->getValue($transformer);
 
             expect($content)
-                ->toBeString()
-                ->toMatch('/^[A-Za-z0-9+\/]+=*$/'); // Base64 pattern
+                ->toBeInstanceOf(\Prism\Prism\ValueObjects\Media\Image::class);
         });
 
         test('image method accepts options for inputType', function () {
@@ -60,18 +59,16 @@ describe('Media Input Integration', function () {
             $content = $contentProperty->getValue($transformer);
 
             expect($content)
-                ->toBeString()
-                ->toMatch('/^[A-Za-z0-9+\/]+=*$/'); // Base64 pattern
+                ->toBeInstanceOf(\Prism\Prism\ValueObjects\Media\Image::class);
         });
 
         test('image method integrates with complete transformation workflow', function () {
             $transformer = app(PrismTransformer::class);
 
             $closure = function ($input) {
-                expect($input)->toBeString();
-                expect($input)->toMatch('/^[A-Za-z0-9+\/]+=*$/'); // Base64 pattern
+                expect($input)->toBeInstanceOf(\Prism\Prism\ValueObjects\Media\Image::class);
 
-                return TransformerResult::successful('Processed image: '.substr($input, 0, 20).'...');
+                return TransformerResult::successful('Processed image: '.substr($input->base64(), 0, 20).'...');
             };
 
             $result = $transformer
@@ -132,8 +129,7 @@ describe('Media Input Integration', function () {
             $content = $contentProperty->getValue($transformer);
 
             expect($content)
-                ->toBeString()
-                ->toMatch('/^[A-Za-z0-9+\/]+=*$/'); // Base64 pattern
+                ->toBeInstanceOf(\Prism\Prism\ValueObjects\Media\Document::class);
         });
 
         test('document method accepts options for inputType and title', function () {
@@ -150,18 +146,16 @@ describe('Media Input Integration', function () {
             $content = $contentProperty->getValue($transformer);
 
             expect($content)
-                ->toBeString()
-                ->toMatch('/^[A-Za-z0-9+\/]+=*$/'); // Base64 pattern
+                ->toBeInstanceOf(\Prism\Prism\ValueObjects\Media\Document::class);
         });
 
         test('document method integrates with complete transformation workflow', function () {
             $transformer = app(PrismTransformer::class);
 
             $closure = function ($input) {
-                expect($input)->toBeString();
-                expect($input)->toMatch('/^[A-Za-z0-9+\/]+=*$/'); // Base64 pattern
+                expect($input)->toBeInstanceOf(\Prism\Prism\ValueObjects\Media\Document::class);
 
-                return TransformerResult::successful('Processed document: '.substr($input, 0, 20).'...');
+                return TransformerResult::successful('Processed document: '.substr($input->base64(), 0, 20).'...');
             };
 
             $result = $transformer
@@ -221,13 +215,13 @@ describe('Media Input Integration', function () {
             $contentProperty->setAccessible(true);
             $imageContent = $contentProperty->getValue($transformer);
 
-            expect($imageContent)->toBeString();
+            expect($imageContent)->toBeInstanceOf(\Prism\Prism\ValueObjects\Media\Image::class);
 
             // Then override with document content
             $transformer->document($this->testDocumentPath);
             $documentContent = $contentProperty->getValue($transformer);
 
-            expect($documentContent)->toBeString();
+            expect($documentContent)->toBeInstanceOf(\Prism\Prism\ValueObjects\Media\Document::class);
             expect($documentContent)->not->toBe($imageContent); // Content was overridden
         });
 
@@ -263,7 +257,7 @@ describe('Media Input Integration', function () {
             $finalContent = $contentProperty->getValue($transformer);
 
             expect($finalContent)->not->toBe($textContent);
-            expect($finalContent)->toMatch('/^[A-Za-z0-9+\/]+=*$/'); // Base64 pattern
+            expect($finalContent)->toBeInstanceOf(\Prism\Prism\ValueObjects\Media\Document::class);
         });
     });
 
@@ -274,7 +268,7 @@ describe('Media Input Integration', function () {
             $result = $transformer
                 ->image($this->testImagePath)
                 ->async()
-                ->using(fn ($content) => TransformerResult::successful('Chained: '.substr($content, 0, 10)))
+                ->using(fn ($content) => TransformerResult::successful('Chained: '.substr(is_string($content) ? $content : $content->base64(), 0, 10)))
                 ->transform();
 
             expect($result)->toBeInstanceOf(PendingDispatch::class);
@@ -294,7 +288,7 @@ describe('Media Input Integration', function () {
 
         test('media methods work identically to text and url methods in chains', function () {
             $transformer = app(PrismTransformer::class);
-            $closure = fn ($content) => TransformerResult::successful('Processed: '.substr($content, 0, 10));
+            $closure = fn ($content) => TransformerResult::successful('Processed: '.substr(is_string($content) ? $content : $content->base64(), 0, 10));
 
             // Test all input types in similar chains
             $textResult = $transformer

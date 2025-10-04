@@ -84,7 +84,7 @@ describe('BaseTransformer Caching', function () {
                     return 'Test prompt';
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     $this->callCount++;
 
@@ -117,7 +117,7 @@ describe('BaseTransformer Caching', function () {
                     return 'First transformer prompt';
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     $this->callCount++;
 
@@ -134,7 +134,7 @@ describe('BaseTransformer Caching', function () {
                     return 'Second transformer prompt';
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     $this->callCount++;
 
@@ -178,7 +178,7 @@ describe('BaseTransformer Caching', function () {
                     return Provider::OPENAI;
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     $this->callCount++;
 
@@ -200,7 +200,7 @@ describe('BaseTransformer Caching', function () {
                     return Provider::ANTHROPIC;
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     $this->callCount++;
 
@@ -234,7 +234,7 @@ describe('BaseTransformer Caching', function () {
                     return 'Cache test prompt';
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     $this->callCount++;
 
@@ -272,7 +272,7 @@ describe('BaseTransformer Caching', function () {
                     return 'Failing prompt';
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     $this->callCount++;
 
@@ -308,7 +308,7 @@ describe('BaseTransformer Caching', function () {
                     return 'Metadata test';
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     return TransformerResult::successful(
                         'Cached content',
@@ -341,7 +341,7 @@ describe('BaseTransformer Caching', function () {
                     return 'Special chars test';
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     return TransformerResult::successful(
                         'Content with special chars: àáâãäåæçèéêë 中文 العربية 🚀'
@@ -403,7 +403,7 @@ describe('BaseTransformer Caching', function () {
                     return 'No cache test';
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     $this->callCount++;
 
@@ -434,7 +434,7 @@ describe('BaseTransformer Caching', function () {
                     return 'Error handling test';
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     $this->callCount++;
 
@@ -465,7 +465,7 @@ describe('BaseTransformer Caching', function () {
                     return 'First transformer';
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     $this->callCount++;
 
@@ -482,7 +482,7 @@ describe('BaseTransformer Caching', function () {
                     return 'Second transformer';
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     $this->callCount++;
 
@@ -522,7 +522,7 @@ describe('BaseTransformer Caching', function () {
                     return 'Transform this test content';
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     // Increment counter to track how many times transformation is called
                     $this->transformationCount++;
@@ -618,7 +618,7 @@ describe('BaseTransformer Caching', function () {
                     return 'Error handling test';
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     $this->transformationCount++;
 
@@ -648,7 +648,7 @@ describe('BaseTransformer Caching', function () {
                     return 'Storage error test';
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     $this->transformationCount++;
 
@@ -678,7 +678,7 @@ describe('BaseTransformer Caching', function () {
                     return 'First transformer prompt';
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     $this->transformationCount++;
 
@@ -695,7 +695,7 @@ describe('BaseTransformer Caching', function () {
                     return 'Second transformer prompt';
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     $this->transformationCount++;
 
@@ -739,7 +739,7 @@ describe('BaseTransformer Caching', function () {
                     return Provider::OPENAI;
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     $this->transformationCount++;
 
@@ -761,7 +761,7 @@ describe('BaseTransformer Caching', function () {
                     return Provider::ANTHROPIC;
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     $this->transformationCount++;
 
@@ -791,7 +791,7 @@ describe('BaseTransformer Caching', function () {
                     return 'TTL test';
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     return TransformerResult::successful("Transformed: {$content}");
                 }
@@ -815,7 +815,7 @@ describe('BaseTransformer Caching', function () {
                     return 'Default TTL test';
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     return TransformerResult::successful("Transformed: {$content}");
                 }

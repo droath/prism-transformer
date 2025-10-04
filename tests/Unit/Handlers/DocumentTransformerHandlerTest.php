@@ -46,7 +46,7 @@ describe('DocumentTransformerHandler', function () {
         $handler = new DocumentTransformerHandler($this->testDocumentPath);
         $result = $handler->handle();
 
-        expect($result)->toBeString();
+        expect($result)->toBeInstanceOf(\Prism\Prism\ValueObjects\Media\Document::class);
     });
 
     describe('inputType support', function () {
@@ -55,8 +55,7 @@ describe('DocumentTransformerHandler', function () {
             $result = $handler->handle();
 
             expect($result)
-                ->toBeString()
-                ->toMatch('/^[A-Za-z0-9+\/]+=*$/'); // Base64 pattern
+                ->toBeInstanceOf(\Prism\Prism\ValueObjects\Media\Document::class);
         });
 
         test('handles base64 inputType', function () {
@@ -64,8 +63,7 @@ describe('DocumentTransformerHandler', function () {
             $result = $handler->handle();
 
             expect($result)
-                ->toBeString()
-                ->toMatch('/^[A-Za-z0-9+\/]+=*$/'); // Base64 pattern
+                ->toBeInstanceOf(\Prism\Prism\ValueObjects\Media\Document::class);
         });
 
         test('handles text inputType', function () {
@@ -73,8 +71,7 @@ describe('DocumentTransformerHandler', function () {
             $result = $handler->handle();
 
             expect($result)
-                ->toBeString()
-                ->toMatch('/^[A-Za-z0-9+\/]+=*$/'); // Base64 pattern
+                ->toBeInstanceOf(\Prism\Prism\ValueObjects\Media\Document::class);
         });
 
         test('handles url inputType', function () {
@@ -180,8 +177,7 @@ describe('DocumentTransformerHandler', function () {
             $result = $handler->handle();
 
             expect($result)
-                ->toBeString()
-                ->toMatch('/^[A-Za-z0-9+\/]+=*$/'); // Base64 pattern
+                ->toBeInstanceOf(\Prism\Prism\ValueObjects\Media\Document::class);
         });
 
         test('returns null when unable to process', function () {
@@ -196,8 +192,7 @@ describe('DocumentTransformerHandler', function () {
             $result = $handler->handle();
 
             expect($result)
-                ->toBeString()
-                ->toMatch('/^[A-Za-z0-9+\/]+=*$/'); // Base64 pattern
+                ->toBeInstanceOf(\Prism\Prism\ValueObjects\Media\Document::class);
         });
 
         test('converts text content to base64', function () {
@@ -205,8 +200,7 @@ describe('DocumentTransformerHandler', function () {
             $result = $handler->handle();
 
             expect($result)
-                ->toBeString()
-                ->toMatch('/^[A-Za-z0-9+\/]+=*$/'); // Base64 pattern
+                ->toBeInstanceOf(\Prism\Prism\ValueObjects\Media\Document::class);
         });
     });
 

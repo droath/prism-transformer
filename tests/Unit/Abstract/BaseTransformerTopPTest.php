@@ -451,7 +451,7 @@ describe('BaseTransformer TopP Configuration', function () {
                     }
 
                     // Override performTransformation to test the integration
-                    protected function performTransformation(string $content, array $context = []): TransformerResult
+                    protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                     {
                         // Verify that topP() method is called and returns expected value
                         $topP = $this->topP();
@@ -487,7 +487,7 @@ describe('BaseTransformer TopP Configuration', function () {
                     }
 
                     // Override performTransformation to test the integration
-                    protected function performTransformation(string $content, array $context = []): TransformerResult
+                    protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                     {
                         // Verify that topP() method returns null
                         $topP = $this->topP();
@@ -544,7 +544,7 @@ describe('BaseTransformer TopP Configuration', function () {
                             return $this->testTopP;
                         }
 
-                        protected function performTransformation(string $content, array $context = []): TransformerResult
+                        protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                         {
                             $topP = $this->topP();
 
@@ -600,7 +600,7 @@ describe('BaseTransformer TopP Configuration', function () {
                         ];
                     }
 
-                    protected function performTransformation(string $content, array $context = []): TransformerResult
+                    protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                     {
                         // Verify topP configuration
                         $topP = $this->topP();
@@ -669,7 +669,7 @@ describe('BaseTransformer TopP Configuration', function () {
                             return $this->testTopP;
                         }
 
-                        protected function performTransformation(string $content, array $context = []): TransformerResult
+                        protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                         {
                             $topP = $this->topP();
 
@@ -724,7 +724,7 @@ describe('BaseTransformer TopP Configuration', function () {
                         return 0.9;
                     }
 
-                    protected function performTransformation(string $content, array $context = []): TransformerResult
+                    protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                     {
                         // Verify all configurations work together
                         $tools = $this->tools();
@@ -770,7 +770,7 @@ describe('BaseTransformer TopP Configuration', function () {
                         return 0.1; // Low topP (focused)
                     }
 
-                    protected function performTransformation(string $content, array $context = []): TransformerResult
+                    protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                     {
                         return TransformerResult::successful('Result with topP 0.1');
                     }
@@ -788,7 +788,7 @@ describe('BaseTransformer TopP Configuration', function () {
                         return 0.9; // High topP (diverse)
                     }
 
-                    protected function performTransformation(string $content, array $context = []): TransformerResult
+                    protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                     {
                         return TransformerResult::successful('Result with topP 0.9');
                     }
@@ -822,7 +822,7 @@ describe('BaseTransformer TopP Configuration', function () {
                         return null; // Use provider default
                     }
 
-                    protected function performTransformation(string $content, array $context = []): TransformerResult
+                    protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                     {
                         return TransformerResult::successful('Result with null topP');
                     }
@@ -840,7 +840,7 @@ describe('BaseTransformer TopP Configuration', function () {
                         return 0.5; // Specific topP
                     }
 
-                    protected function performTransformation(string $content, array $context = []): TransformerResult
+                    protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                     {
                         return TransformerResult::successful('Result with topP 0.5');
                     }

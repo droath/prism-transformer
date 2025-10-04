@@ -674,7 +674,7 @@ describe('BaseTransformer Timeout Configuration', function () {
                     }
 
                     // Override makeRequest to capture the call to resolveClientOptions
-                    protected function makeRequest(string $content): \Prism\Prism\Text\Response|\Prism\Prism\Structured\Response
+                    protected function makeRequest(string|\Prism\Prism\ValueObjects\Media\Media $content): \Prism\Prism\Text\Response|\Prism\Prism\Structured\Response
                     {
                         $clientOptions = $this->resolveClientOptions();
 

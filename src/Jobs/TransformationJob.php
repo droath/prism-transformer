@@ -48,12 +48,12 @@ class TransformationJob implements ShouldQueue
      * Create a new job instance.
      *
      * @param \Droath\PrismTransformer\Contracts\TransformerInterface|\Closure|\Laravel\SerializableClosure\SerializableClosure $handler The transformer instance or closure to execute
-     * @param string $content The content to transform
+     * @param string|null $content The content to transform (Media objects are converted to base64 strings before queuing)
      * @param array $context Additional context data (user_id, tenant_id, etc.)
      */
     public function __construct(
         public TransformerInterface|\Closure|SerializableClosure $handler,
-        public string $content,
+        public ?string $content,
         public array $context = []
     ) {
         $configService = app(ConfigurationService::class);
@@ -135,7 +135,8 @@ class TransformationJob implements ShouldQueue
 
         Log::error('TransformationJob failed after all retry attempts', [
             'exception' => $exception->getMessage(),
-            'content_length' => strlen($this->content),
+            'content_type' => is_string($this->content) ? 'string' : get_class($this->content),
+            'content_length' => is_string($this->content) ? strlen($this->content) : null,
             'context' => $this->context,
             'handler' => $handlerType,
         ]);

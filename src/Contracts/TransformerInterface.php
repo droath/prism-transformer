@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Droath\PrismTransformer\Contracts;
 
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
+use Prism\Prism\ValueObjects\Media\Media;
 
 /**
  * Primary interface defining the core transformation contract.
@@ -52,7 +53,7 @@ interface TransformerInterface
      * 5. Cache storage
      * 6. Post-transformation hooks
      *
-     * @param string $content The raw content to transform
+     * @param string|\Prism\Prism\ValueObjects\Media\Media $content The raw content to transform (string or Media object)
      *
      * @return TransformerResult The transformation result containing:
      *                          - Transformed content
@@ -80,5 +81,5 @@ interface TransformerInterface
      * }
      * ```
      */
-    public function execute(string $content, array $context = []): TransformerResult;
+    public function execute(string|Media $content, array $context = []): TransformerResult;
 }

@@ -45,7 +45,7 @@ describe('ImageTransformerHandler', function () {
         $handler = new ImageTransformerHandler($this->testImagePath);
         $result = $handler->handle();
 
-        expect($result)->toBeString();
+        expect($result)->toBeInstanceOf(\Prism\Prism\ValueObjects\Media\Image::class);
     });
 
     describe('inputType support', function () {
@@ -54,8 +54,7 @@ describe('ImageTransformerHandler', function () {
             $result = $handler->handle();
 
             expect($result)
-                ->toBeString()
-                ->toMatch('/^[A-Za-z0-9+\/]+=*$/'); // Base64 pattern
+                ->toBeInstanceOf(\Prism\Prism\ValueObjects\Media\Image::class);
         });
 
         test('handles base64 inputType', function () {
@@ -63,8 +62,7 @@ describe('ImageTransformerHandler', function () {
             $result = $handler->handle();
 
             expect($result)
-                ->toBeString()
-                ->toBe($this->testBase64);
+                ->toBeInstanceOf(\Prism\Prism\ValueObjects\Media\Image::class);
         });
 
         test('handles url inputType', function () {
@@ -163,8 +161,7 @@ describe('ImageTransformerHandler', function () {
             $result = $handler->handle();
 
             expect($result)
-                ->toBeString()
-                ->toMatch('/^[A-Za-z0-9+\/]+=*$/'); // Base64 pattern
+                ->toBeInstanceOf(\Prism\Prism\ValueObjects\Media\Image::class);
         });
 
         test('returns null when unable to process', function () {
@@ -174,11 +171,11 @@ describe('ImageTransformerHandler', function () {
                 ->toThrow(InvalidArgumentException::class);
         });
 
-        test('converts local file to base64', function () {
+        test('converts local file to Media object', function () {
             $handler = new ImageTransformerHandler($this->testImagePath, ['inputType' => 'localPath']);
             $result = $handler->handle();
 
-            expect($result)->toBe($this->testBase64);
+            expect($result)->toBeInstanceOf(\Prism\Prism\ValueObjects\Media\Image::class);
         });
     });
 

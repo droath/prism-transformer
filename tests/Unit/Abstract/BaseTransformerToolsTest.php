@@ -349,7 +349,7 @@ describe('BaseTransformer Tools Configuration', function () {
                 }
 
                 // Override performTransformation to test the integration
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     // Verify that tools() method is called and returns expected tools
                     $tools = $this->tools();
@@ -386,7 +386,7 @@ describe('BaseTransformer Tools Configuration', function () {
                 }
 
                 // Override performTransformation to test the integration
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     // Verify that tools() method returns empty array
                     $tools = $this->tools();
@@ -456,7 +456,7 @@ describe('BaseTransformer Tools Configuration', function () {
                     ];
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     $tools = $this->tools();
 
@@ -509,7 +509,7 @@ describe('BaseTransformer Tools Configuration', function () {
                     ];
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     $tools = $this->tools();
 
@@ -556,7 +556,7 @@ describe('BaseTransformer Tools Configuration', function () {
                     ];
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     // Simulate the method chaining that happens in the actual implementation
                     $tools = $this->tools();
@@ -606,7 +606,7 @@ describe('BaseTransformer Tools Configuration', function () {
                     ];
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     return TransformerResult::successful('Result with tool1');
                 }
@@ -626,7 +626,7 @@ describe('BaseTransformer Tools Configuration', function () {
                     ];
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     return TransformerResult::successful('Result with tool2');
                 }

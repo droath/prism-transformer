@@ -13,6 +13,7 @@ use Droath\PrismTransformer\ValueObjects\TransformerResult;
 use Droath\PrismTransformer\Contracts\ContentFetcherInterface;
 use Droath\PrismTransformer\Services\RateLimitService;
 use Illuminate\Foundation\Bus\PendingDispatch;
+use Prism\Prism\ValueObjects\Media\Media;
 
 /**
  * The main PrismTransformer class providing fluent interface for AI-powered
@@ -87,10 +88,11 @@ class PrismTransformer implements PrismTransformerInterface
      * The content to be transformed.
      *
      * This can be set directly via text() or populated by fetching from a URL
-     * via the url() method. Contains the raw content that will be passed to
+     * via the url() method. For media transformations (image/document), this
+     * contains a Media object. Contains the raw content that will be passed to
      * the configured transformer.
      */
-    protected ?string $content = null;
+    protected string|Media|null $content = null;
 
     /**
      * Context data to be preserved throughout the transformation lifecycle.
@@ -248,9 +250,15 @@ class PrismTransformer implements PrismTransformerInterface
     protected function handleAsyncTransformation(
         \Closure|TransformerInterface $handler
     ): TransformerResult|PendingDispatch|null {
+        // Convert Media objects to base64 strings for queue serialization
+        // Laravel queues use JSON which can't handle binary data
+        $content = $this->content instanceof Media
+            ? $this->content->base64()
+            : $this->content;
+
         return TransformationJob::dispatch(
             $handler,
-            $this->content ?? '',
+            $content,
             $this->buildContext()
         );
     }

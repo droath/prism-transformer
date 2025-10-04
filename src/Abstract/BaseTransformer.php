@@ -10,6 +10,7 @@ use Prism\Prism\Structured\Response as StructuredResponse;
 use Prism\Prism\Schema\ObjectSchema;
 use Prism\Prism\ValueObjects\Messages\UserMessage;
 use Prism\Prism\ValueObjects\Messages\SystemMessage;
+use Prism\Prism\ValueObjects\Media\Media;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Contracts\Cache\Repository;
@@ -77,7 +78,7 @@ abstract class BaseTransformer implements TransformerInterface
     /**
      * {@inheritDoc}
      */
-    public function execute(string $content, array $context = []): TransformerResult
+    public function execute(string|Media $content, array $context = []): TransformerResult
     {
         if (
             ($result = $this->getCache())
@@ -374,13 +375,13 @@ abstract class BaseTransformer implements TransformerInterface
      * This method uses Prism::structured() to perform the actual
      * AI transformation using the configured provider and model.
      *
-     * @param string $content
+     * @param string|\Prism\Prism\ValueObjects\Media\Media $content
      *   The content to transform.
      *
      * @return TransformerResult
      *   The transformation results with data and metadata.
      */
-    protected function performTransformation(string $content, array $context = []): TransformerResult
+    protected function performTransformation(string|Media $content, array $context = []): TransformerResult
     {
         try {
             $context['source'] = $content;
@@ -430,7 +431,7 @@ abstract class BaseTransformer implements TransformerInterface
     /**
      * Make the request to the LLM provider.
      */
-    protected function makeRequest(string $content): TextResponse|StructuredResponse
+    protected function makeRequest(string|Media $content): TextResponse|StructuredResponse
     {
         $provider = $this->provider()->toPrism();
         $outputFormat = $this->outputFormat();
@@ -479,10 +480,10 @@ abstract class BaseTransformer implements TransformerInterface
      * such as adding system messages, conversation history, or different
      * message types.
      *
-     * @param string $content
-     *   The content to be transformed
+     * @param string|\Prism\Prism\ValueObjects\Media\Media $content
+     *   The content to be transformed (string or Media object)
      */
-    protected function structureMessages(string $content): array
+    protected function structureMessages(string|Media $content): array
     {
         $messages = [];
 
@@ -569,7 +570,7 @@ abstract class BaseTransformer implements TransformerInterface
      * Override in concrete classes or traits for custom pre-processing
      * like input validation, content sanitization, etc.
      */
-    protected function beforeTransform(string $content): void {}
+    protected function beforeTransform(string|Media $content): void {}
 
     /**
      * Hook called after transformation completes.

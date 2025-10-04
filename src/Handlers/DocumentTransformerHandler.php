@@ -22,7 +22,7 @@ class DocumentTransformerHandler extends MediaTransformerHandler
     /**
      * {@inheritDoc}
      */
-    public function handle(): ?string
+    public function handle(): Document
     {
         $this->validateHandler();
 
@@ -46,7 +46,7 @@ class DocumentTransformerHandler extends MediaTransformerHandler
         }
     }
 
-    protected function handleLocalPath(): string
+    protected function handleLocalPath(): Document
     {
         if (! file_exists($this->path)) {
             throw new InvalidArgumentException(
@@ -57,10 +57,10 @@ class DocumentTransformerHandler extends MediaTransformerHandler
         return Document::fromLocalPath(
             $this->path,
             $this->options['title'] ?? null
-        )->base64();
+        );
     }
 
-    protected function handleBase64(): string
+    protected function handleBase64(): Document
     {
         if (! $this->isValidBase64($this->path)) {
             throw new InvalidArgumentException(
@@ -73,7 +73,7 @@ class DocumentTransformerHandler extends MediaTransformerHandler
                 $this->path,
                 $this->options['mimeType'] ?? null,
                 $this->options['title'] ?? null
-            )->base64();
+            );
         } catch (\Throwable $e) {
             throw new InvalidArgumentException(
                 "Invalid base64 content: {$e->getMessage()}", 0, $e
@@ -81,45 +81,45 @@ class DocumentTransformerHandler extends MediaTransformerHandler
         }
     }
 
-    protected function handleText(): string
+    protected function handleText(): Document
     {
         return Document::fromText(
             $this->path,
             $this->options['title'] ?? null
-        )->base64();
+        );
     }
 
-    protected function handleUrl(): string
+    protected function handleUrl(): Document
     {
         return Document::fromUrl(
             $this->path,
             $this->options['title'] ?? null
-        )->base64();
+        );
     }
 
-    protected function handleStoragePath(): string
+    protected function handleStoragePath(): Document
     {
         return Document::fromStoragePath(
             $this->path,
             $this->options['disk'] ?? null,
             $this->options['title'] ?? null
-        )->base64();
+        );
     }
 
-    protected function handleRawContent(): string
+    protected function handleRawContent(): Document
     {
         return Document::fromRawContent(
             $this->path,
             $this->options['mimeType'] ?? null,
             $this->options['title'] ?? null
-        )->base64();
+        );
     }
 
-    protected function handleFileId(): string
+    protected function handleFileId(): Document
     {
         return Document::fromFileId(
             $this->path,
             $this->options['title'] ?? null
-        )->base64();
+        );
     }
 }

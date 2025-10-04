@@ -49,7 +49,7 @@ describe('Multi-Provider Cache Performance', function () {
                     return 'gpt-4o-mini';
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     $this->transformationCallCount++;
 
@@ -83,7 +83,7 @@ describe('Multi-Provider Cache Performance', function () {
                     return 'claude-3-sonnet';
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     $this->transformationCallCount++;
 
@@ -140,7 +140,7 @@ describe('Multi-Provider Cache Performance', function () {
                     return 'gpt-4o';
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     $this->transformationCallCount++;
 
@@ -174,7 +174,7 @@ describe('Multi-Provider Cache Performance', function () {
                     return 'gpt-4o-mini';
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     $this->transformationCallCount++;
 
@@ -252,7 +252,7 @@ describe('Multi-Provider Cache Performance', function () {
                         return $this->testModel;
                     }
 
-                    protected function performTransformation(string $content, array $context = []): TransformerResult
+                    protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                     {
                         $this->transformationCallCount++;
 
@@ -304,7 +304,7 @@ describe('Multi-Provider Cache Performance', function () {
                     return Provider::OPENAI;
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     return TransformerResult::successful(
                         "Provider 1: {$content}",
@@ -329,7 +329,7 @@ describe('Multi-Provider Cache Performance', function () {
                     return Provider::ANTHROPIC;
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     return TransformerResult::successful(
                         "Provider 2: {$content}",
@@ -383,7 +383,7 @@ describe('Multi-Provider Cache Performance', function () {
                     return Provider::OPENAI;
                 }
 
-                protected function performTransformation(string $content, array $context = []): TransformerResult
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
                 {
                     return TransformerResult::successful(
                         "TTL test: {$content}",
