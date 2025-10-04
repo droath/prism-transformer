@@ -280,7 +280,7 @@ describe('Media Input Integration', function () {
             $result = $transformer
                 ->document($this->testDocumentPath)
                 ->async()
-                ->using(fn ($content) => TransformerResult::successful('Chained: '.substr($content, 0, 10)))
+                ->using(fn ($content) => TransformerResult::successful('Chained: '.substr(is_string($content) ? $content : $content->base64(), 0, 10)))
                 ->transform();
 
             expect($result)->toBeInstanceOf(PendingDispatch::class);
@@ -324,7 +324,7 @@ describe('Media Input Integration', function () {
             $result = $transformer
                 ->image($this->testImagePath)
                 ->async()
-                ->using(fn ($content) => TransformerResult::successful('Async image: '.substr($content, 0, 10)))
+                ->using(fn ($content) => TransformerResult::successful('Async image: '.substr(is_string($content) ? $content : $content->base64(), 0, 10)))
                 ->transform();
 
             expect($result)->toBeInstanceOf(PendingDispatch::class);
@@ -342,7 +342,7 @@ describe('Media Input Integration', function () {
             $result = $transformer
                 ->document($this->testDocumentPath)
                 ->async()
-                ->using(fn ($content) => TransformerResult::successful('Async doc: '.substr($content, 0, 10)))
+                ->using(fn ($content) => TransformerResult::successful('Async doc: '.substr(is_string($content) ? $content : $content->base64(), 0, 10)))
                 ->transform();
 
             expect($result)->toBeInstanceOf(PendingDispatch::class);
