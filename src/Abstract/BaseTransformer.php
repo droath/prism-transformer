@@ -81,7 +81,7 @@ abstract class BaseTransformer implements TransformerInterface
     public function execute(string|Media $content, array $context = []): TransformerResult
     {
         if (
-            ($result = $this->getCache())
+            ($result = $this->getCache($content, $context))
             && $result->isSuccessful()
         ) {
             return $result;
@@ -91,7 +91,7 @@ abstract class BaseTransformer implements TransformerInterface
         $result = $this->performTransformation($content, $context);
 
         if ($result->isSuccessful()) {
-            $this->setCache($result);
+            $this->setCache($content, $context, $result);
         }
 
         $this->afterTransform($result);
@@ -582,8 +582,13 @@ abstract class BaseTransformer implements TransformerInterface
 
     /**
      * The transformer cache ID.
+     *
+     * @param string|\Prism\Prism\ValueObjects\Media\Media $content
+     *   The content being transformed
+     * @param array<string, mixed> $context
+     *   The context array that may contain user-specific data
      */
-    protected function cacheId(): string
+    protected function cacheId(string|Media $content, array $context = []): string
     {
         return hash('sha256', serialize(array_filter([
             static::class,
@@ -594,21 +599,43 @@ abstract class BaseTransformer implements TransformerInterface
             $this->model(),
             $this->tools(),
             $this->temperature(),
-        ])));
+            $this->serializeContent($content),
+            $context,
+        ], fn ($value) => $value !== null && $value !== [] && $value !== '')));
+    }
+
+    /**
+     * Serialize content for cache key generation.
+     *
+     * @param string|\Prism\Prism\ValueObjects\Media\Media $content
+     *   The content to serialize
+     */
+    protected function serializeContent(string|Media $content): string
+    {
+        if ($content instanceof Media) {
+            return serialize($content);
+        }
+
+        return $content;
     }
 
     /**
      * Get the transformer cache result.
+     *
+     * @param string|\Prism\Prism\ValueObjects\Media\Media $content
+     *   The content being transformed
+     * @param array<string, mixed> $context
+     *   The context array that may contain user-specific data
      */
-    protected function getCache(): ?TransformerResult
+    protected function getCache(string|Media $content, array $context = []): ?TransformerResult
     {
-        if (! $this->configuration->isCacheEnabled()) {
+        if (! $this->configuration->isTransformerResultsCacheEnabled()) {
             return null;
         }
 
         try {
             return $this->getCacheStore()->get(
-                $this->buildCacheKey(),
+                $this->buildCacheKey($content, $context),
             );
         } catch (\Throwable) {
             return null;
@@ -617,17 +644,22 @@ abstract class BaseTransformer implements TransformerInterface
 
     /**
      * Set the transformer cache result.
+     *
+     * @param string|\Prism\Prism\ValueObjects\Media\Media $content
+     *   The content that was transformed
+     * @param array<string, mixed> $context
+     *   The context array that may contain user-specific data
      */
-    protected function setCache($result): bool
+    protected function setCache(string|Media $content, array $context, TransformerResult $result): bool
     {
-        if (! $this->configuration->isCacheEnabled()) {
+        if (! $this->configuration->isTransformerResultsCacheEnabled()) {
             return false;
         }
-        $ttl = $this->configuration->getTransformerDataCacheTtl();
+        $ttl = $this->configuration->getTransformerResultsCacheTtl();
 
         try {
             return $this->getCacheStore()->put(
-                $this->buildCacheKey(),
+                $this->buildCacheKey($content, $context),
                 $result,
                 $ttl
             );
@@ -656,11 +688,16 @@ abstract class BaseTransformer implements TransformerInterface
     /**
      * Build the cache key with a configured prefix.
      *
+     * @param string|\Prism\Prism\ValueObjects\Media\Media $content
+     *   The content being transformed
+     * @param array<string, mixed> $context
+     *   The context array that may contain user-specific data
+     *
      * @return string The complete cache key.
      */
-    protected function buildCacheKey(): string
+    protected function buildCacheKey(string|Media $content, array $context = []): string
     {
-        return "{$this->configuration->getCachePrefix()}:{$this->cacheId()}";
+        return "{$this->configuration->getCachePrefix()}:{$this->cacheId($content, $context)}";
     }
 
     /**

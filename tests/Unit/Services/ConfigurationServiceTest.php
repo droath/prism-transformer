@@ -45,65 +45,7 @@ describe('ConfigurationService', function () {
         });
     });
 
-    describe('provider configuration methods', function () {
-        test('can get provider configuration', function () {
-            $expectedConfig = [
-                'default_model' => 'test-model',
-                'max_tokens' => 2048,
-                'temperature' => 0.5,
-            ];
-
-            Config::set('prism-transformer.providers.openai', $expectedConfig);
-
-            $config = $this->configService->getProviderConfig(Provider::OPENAI);
-
-            expect($config)->toBe($expectedConfig);
-        });
-
-        test('can get specific provider configuration value', function () {
-            Config::set('prism-transformer.providers.anthropic.default_model', 'claude-3-sonnet');
-
-            $model = $this->configService->getProviderConfigValue(Provider::ANTHROPIC, 'default_model');
-
-            expect($model)->toBe('claude-3-sonnet');
-        });
-
-        test('returns default for missing provider configuration value', function () {
-            $value = $this->configService->getProviderConfigValue(Provider::OPENAI, 'nonexistent_key', 'default_value');
-
-            expect($value)->toBe('default_value');
-        });
-
-        test('can get all provider configurations', function () {
-            Config::set('prism-transformer.providers', [
-                'openai' => ['default_model' => 'gpt-4'],
-                'anthropic' => ['default_model' => 'claude-3'],
-            ]);
-
-            $allConfigs = $this->configService->getAllProviderConfigs();
-
-            expect($allConfigs)->toHaveKey('openai');
-            expect($allConfigs)->toHaveKey('anthropic');
-            expect($allConfigs['openai']['default_model'])->toBe('gpt-4');
-            expect($allConfigs['anthropic']['default_model'])->toBe('claude-3');
-        });
-    });
-
     describe('content fetcher configuration methods', function () {
-        test('can get content fetcher configuration', function () {
-            $expectedConfig = [
-                'timeout' => 60,
-                'connect_timeout' => 15,
-                'user_agent' => 'Test Agent',
-            ];
-
-            Config::set('prism-transformer.content_fetcher', $expectedConfig);
-
-            $config = $this->configService->getContentFetcherConfig();
-
-            expect($config)->toBe($expectedConfig);
-        });
-
         test('can get HTTP timeout', function () {
             Config::set('prism-transformer.content_fetcher.timeout', 45);
 
@@ -117,56 +59,9 @@ describe('ConfigurationService', function () {
 
             expect($timeout)->toBe(30);
         });
-
-        test('can get HTTP connect timeout', function () {
-            Config::set('prism-transformer.content_fetcher.connect_timeout', 20);
-
-            $connectTimeout = $this->configService->getHttpConnectTimeout();
-
-            expect($connectTimeout)->toBe(20);
-        });
-
-        test('can get retry configuration', function () {
-            $retryConfig = [
-                'max_attempts' => 5,
-                'delay' => 2000,
-            ];
-
-            Config::set('prism-transformer.content_fetcher.retry', $retryConfig);
-
-            $config = $this->configService->getRetryConfig();
-
-            expect($config)->toBe($retryConfig);
-        });
-
-        test('can get validation configuration', function () {
-            $validationConfig = [
-                'max_content_length' => 5242880,
-                'allowed_schemes' => ['https'],
-            ];
-
-            Config::set('prism-transformer.content_fetcher.validation', $validationConfig);
-
-            $config = $this->configService->getValidationConfig();
-
-            expect($config)->toBe($validationConfig);
-        });
     });
 
     describe('transformation configuration methods', function () {
-        test('can get transformation configuration', function () {
-            $transformationConfig = [
-                'async_queue' => 'transformations',
-                'timeout' => 300,
-            ];
-
-            Config::set('prism-transformer.transformation', $transformationConfig);
-
-            $config = $this->configService->getTransformationConfig();
-
-            expect($config)->toBe($transformationConfig);
-        });
-
         test('can get async queue name', function () {
             Config::set('prism-transformer.transformation.async_queue', 'custom_queue');
 
@@ -183,32 +78,32 @@ describe('ConfigurationService', function () {
     });
 
     describe('cache configuration methods', function () {
-        test('can get cache configuration', function () {
-            $cacheConfig = [
-                'enabled' => true,
-                'store' => 'redis',
-                'prefix' => 'custom_prefix',
-            ];
+        test('can check if content fetch cache is enabled', function () {
+            Config::set('prism-transformer.cache.content_fetch.enabled', true);
 
-            Config::set('prism-transformer.cache', $cacheConfig);
+            $isEnabled = $this->configService->isContentFetchCacheEnabled();
 
-            $config = $this->configService->getCacheConfig();
-
-            expect($config)->toBe($cacheConfig);
+            expect($isEnabled)->toBeTrue();
         });
 
-        test('can check if cache is enabled', function () {
-            Config::set('prism-transformer.cache.enabled', false);
-
-            $isEnabled = $this->configService->isCacheEnabled();
+        test('returns false for content fetch cache enabled by default', function () {
+            $isEnabled = $this->configService->isContentFetchCacheEnabled();
 
             expect($isEnabled)->toBeFalse();
         });
 
-        test('returns true for cache enabled by default', function () {
-            $isEnabled = $this->configService->isCacheEnabled();
+        test('can check if transformer results cache is enabled', function () {
+            Config::set('prism-transformer.cache.transformer_results.enabled', true);
+
+            $isEnabled = $this->configService->isTransformerResultsCacheEnabled();
 
             expect($isEnabled)->toBeTrue();
+        });
+
+        test('returns false for transformer results cache enabled by default', function () {
+            $isEnabled = $this->configService->isTransformerResultsCacheEnabled();
+
+            expect($isEnabled)->toBeFalse();
         });
 
         test('can get cache store', function () {
@@ -227,22 +122,22 @@ describe('ConfigurationService', function () {
             expect($prefix)->toBe('custom_prefix');
         });
 
-        test('can get transformer data cache TTL', function () {
-            Config::set('prism-transformer.cache.ttl.transformer_data', 7200);
+        test('can get transformer results cache TTL', function () {
+            Config::set('prism-transformer.cache.transformer_results.ttl', 7200);
 
-            $ttl = $this->configService->getTransformerDataCacheTtl();
+            $ttl = $this->configService->getTransformerResultsCacheTtl();
 
             expect($ttl)->toBe(7200);
         });
 
-        test('returns default transformer data cache TTL when not configured', function () {
-            $ttl = $this->configService->getTransformerDataCacheTtl();
+        test('returns default transformer results cache TTL when not configured', function () {
+            $ttl = $this->configService->getTransformerResultsCacheTtl();
 
             expect($ttl)->toBe(3600); // 1 hour default
         });
 
         test('can get content fetch cache TTL', function () {
-            Config::set('prism-transformer.cache.ttl.content_fetch', 900);
+            Config::set('prism-transformer.cache.content_fetch.ttl', 900);
 
             $ttl = $this->configService->getContentFetchCacheTtl();
 
@@ -253,28 +148,6 @@ describe('ConfigurationService', function () {
             $ttl = $this->configService->getContentFetchCacheTtl();
 
             expect($ttl)->toBe(1800); // 30 minutes default
-        });
-
-        test('can get all cache TTL settings', function () {
-            $ttlConfig = [
-                'content_fetch' => 900,
-                'transformer_data' => 7200,
-            ];
-
-            Config::set('prism-transformer.cache.ttl', $ttlConfig);
-
-            $config = $this->configService->getCacheTtlConfig();
-
-            expect($config)->toBe($ttlConfig);
-        });
-
-        test('returns default TTL config when not configured', function () {
-            $config = $this->configService->getCacheTtlConfig();
-
-            expect($config)->toBe([
-                'content_fetch' => 1800,
-                'transformer_data' => 3600,
-            ]);
         });
     });
 
@@ -369,51 +242,6 @@ describe('ConfigurationService', function () {
             expect($connectTimeout)->toBeInt();
             expect($timeout)->toBe(240);
             expect($connectTimeout)->toBe(15);
-        });
-    });
-
-    describe('configuration validation', function () {
-        test('can validate complete configuration', function () {
-            // Set up complete configuration
-            Config::set('prism-transformer.default_provider', Provider::OPENAI);
-            Config::set('prism-transformer.providers', []);
-            Config::set('prism-transformer.content_fetcher', []);
-            Config::set('prism-transformer.transformation', []);
-            Config::set('prism-transformer.cache', []);
-
-            $missing = $this->configService->validateConfiguration();
-
-            expect($missing)->toBeEmpty();
-        });
-
-        test('detects missing configuration sections', function () {
-            // Clear all configuration
-            Config::set('prism-transformer', []);
-
-            $missing = $this->configService->validateConfiguration();
-
-            expect($missing)->toContain('default_provider');
-            expect($missing)->toContain('providers');
-            expect($missing)->toContain('content_fetcher');
-            expect($missing)->toContain('transformation');
-            expect($missing)->toContain('cache');
-        });
-
-        test('detects partially missing configuration', function () {
-            // Clear all config first
-            Config::set('prism-transformer', []);
-
-            // Set only some sections
-            Config::set('prism-transformer.default_provider', Provider::OPENAI);
-            Config::set('prism-transformer.providers', []);
-
-            $missing = $this->configService->validateConfiguration();
-
-            expect($missing)->toContain('content_fetcher');
-            expect($missing)->toContain('transformation');
-            expect($missing)->toContain('cache');
-            expect($missing)->not->toContain('default_provider');
-            expect($missing)->not->toContain('providers');
         });
     });
 

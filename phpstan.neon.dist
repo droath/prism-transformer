@@ -11,5 +11,10 @@ parameters:
     checkOctaneCompatibility: true
     treatPhpDocTypesAsCertain: false
     checkModelProperties: true
+    ignoreErrors:
+        -
+            message: "#Called 'env' outside of the config directory#"
+            paths:
+                - config/*.php
     excludePaths:
         - config/prism-transformer.php

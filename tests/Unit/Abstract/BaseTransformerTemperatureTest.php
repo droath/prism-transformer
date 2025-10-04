@@ -396,7 +396,7 @@ describe('BaseTransformer Temperature Configuration', function () {
     describe('temperature integration with performTransformation', function () {
         beforeEach(function () {
             // Disable caching for integration tests
-            config(['prism-transformer.cache.enabled' => false]);
+            config(['prism-transformer.cache.transformer_results.enabled' => false]);
         });
 
         test('calls usingTemperature when temperature is defined', function () {
@@ -652,7 +652,7 @@ describe('BaseTransformer Temperature Configuration', function () {
 
     describe('temperature caching behavior', function () {
         test('temperature configuration affects cache key generation', function () {
-            config(['prism-transformer.cache.enabled' => true]);
+            config(['prism-transformer.cache.transformer_results.enabled' => true]);
 
             $transformer1 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
@@ -704,7 +704,7 @@ describe('BaseTransformer Temperature Configuration', function () {
         });
 
         test('null temperature vs specific temperature creates different cache entries', function () {
-            config(['prism-transformer.cache.enabled' => true]);
+            config(['prism-transformer.cache.transformer_results.enabled' => true]);
 
             $transformerNull = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {

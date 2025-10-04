@@ -414,27 +414,19 @@ describe('Complete Transformation Pipeline Integration', function () {
 
     describe('performance and caching integration', function () {
         test('caching configuration integration', function () {
-            Config::set('prism-transformer.cache.enabled', true);
+            Config::set('prism-transformer.cache.transformer_results.enabled', true);
             Config::set('prism-transformer.cache.prefix', 'test_transform');
-            Config::set('prism-transformer.cache.ttl.transformation_results', 7200);
+            Config::set('prism-transformer.cache.transformer_results.ttl', 7200);
 
-            expect($this->configService->isCacheEnabled())->toBeTrue();
+            expect($this->configService->isTransformerResultsCacheEnabled())->toBeTrue();
             expect($this->configService->getCachePrefix())->toBe('test_transform');
-
-            $cacheConfig = $this->configService->getCacheConfig();
-            expect($cacheConfig['enabled'])->toBeTrue();
-            expect($cacheConfig['prefix'])->toBe('test_transform');
+            expect($this->configService->getTransformerResultsCacheTtl())->toBe(7200);
         });
 
         test('timeout configuration integration', function () {
             Config::set('prism-transformer.content_fetcher.timeout', 60);
-            Config::set('prism-transformer.content_fetcher.connect_timeout', 15);
 
             expect($this->configService->getHttpTimeout())->toBe(60);
-            expect($this->configService->getHttpConnectTimeout())->toBe(15);
-
-            $retryConfig = $this->configService->getRetryConfig();
-            expect($retryConfig)->toBeArray();
         });
     });
 
@@ -451,7 +443,7 @@ describe('Complete Transformation Pipeline Integration', function () {
                 {
                     // Access configuration service
                     $provider = $this->configuration->getDefaultProvider();
-                    $cacheEnabled = $this->configuration->isCacheEnabled();
+                    $cacheEnabled = $this->configuration->isTransformerResultsCacheEnabled();
 
                     return TransformerResult::successful("Provider: {$provider->value}, Cache: ".($cacheEnabled ? 'enabled' : 'disabled'));
                 }
@@ -494,27 +486,18 @@ describe('Complete Transformation Pipeline Integration', function () {
 
     describe('validation integration in transformation pipeline', function () {
         test('configuration validation during transformation', function () {
-            $missingConfig = $this->configService->validateConfiguration();
-
-            // Should have all required configuration sections
-            expect($missingConfig)->toBeArray();
-
-            // If configuration is complete, no missing sections
-            if (empty($missingConfig)) {
-                expect($this->configService->getDefaultProvider())->toBeInstanceOf(Provider::class);
-                expect($this->configService->getCacheConfig())->toBeArray();
-            }
+            // Verify configuration is accessible
+            expect($this->configService->getDefaultProvider())->toBeInstanceOf(Provider::class);
+            expect($this->configService->getCacheStore())->toBeString();
+            expect($this->configService->getCachePrefix())->toBeString();
         });
 
         test('provider configuration consistency', function () {
-            $allProviderConfigs = $this->configService->getAllProviderConfigs();
-
-            expect($allProviderConfigs)->toBeArray();
-            expect($allProviderConfigs)->not->toBeEmpty();
-
-            // Each provider should have configuration
+            // Each provider should have a default model configured
             foreach (Provider::cases() as $provider) {
-                expect($allProviderConfigs)->toHaveKey($provider->value);
+                $config = config("prism-transformer.providers.{$provider->value}");
+                expect($config)->toBeArray();
+                expect($config)->toHaveKey('default_model');
             }
         });
     });

@@ -86,10 +86,10 @@ class ExampleTransformerUsageTest extends TransformerTestCase
         // Manually verify cache is enabled and working
         // Note: Mock transformers don't use the actual cache system
         // This test demonstrates the testing utilities work
-        $this->assertTrue(config('prism-transformer.cache.enabled'), 'Cache should be enabled');
+        $this->assertTrue(config('prism-transformer.cache.transformer_results.enabled'), 'Cache should be enabled');
 
         // Test that cache is properly configured
-        $this->assertConfigEquals('prism-transformer.cache.enabled', true);
+        $this->assertConfigEquals('prism-transformer.cache.transformer_results.enabled', true);
     }
 
     public function test_cache_disabled_behavior()

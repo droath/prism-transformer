@@ -47,17 +47,17 @@ describe('BasicHttpFetcher Caching', function () {
         });
 
         test('respects cache enabled configuration', function () {
-            Config::set('prism-transformer.cache.enabled', false);
+            Config::set('prism-transformer.cache.content_fetch.enabled', false);
 
             $configService = new ConfigurationService();
-            $isCacheEnabled = $configService->isCacheEnabled();
+            $isCacheEnabled = $configService->isContentFetchCacheEnabled();
 
             expect($isCacheEnabled)->toBeFalse();
         });
 
         test('respects cache TTL configuration', function () {
-            Config::set('prism-transformer.cache.enabled', true);
-            Config::set('prism-transformer.cache.ttl.content_fetch', 900);
+            Config::set('prism-transformer.cache.content_fetch.enabled', true);
+            Config::set('prism-transformer.cache.content_fetch.ttl', 900);
 
             $configService = new ConfigurationService();
             $ttl = $configService->getContentFetchCacheTtl();
@@ -68,7 +68,7 @@ describe('BasicHttpFetcher Caching', function () {
 
     describe('cache behavior through public interface', function () {
         test('caches fetch results consistently', function () {
-            Config::set('prism-transformer.cache.enabled', true);
+            Config::set('prism-transformer.cache.content_fetch.enabled', true);
 
             $fetcher = new class(httpFactory: $this->httpFactory, logger: $this->logger, cache: $this->cacheManager, configuration: $this->configurationService) extends BasicHttpFetcher
             {
@@ -115,7 +115,7 @@ describe('BasicHttpFetcher Caching', function () {
         });
 
         test('different URLs use different cache keys', function () {
-            Config::set('prism-transformer.cache.enabled', true);
+            Config::set('prism-transformer.cache.content_fetch.enabled', true);
 
             $fetcher = new BasicHttpFetcher(
                 httpFactory: $this->httpFactory,
@@ -167,7 +167,7 @@ describe('BasicHttpFetcher Caching', function () {
 
     describe('cache storage through public interface', function () {
         test('stores and retrieves successful fetch results', function () {
-            Config::set('prism-transformer.cache.enabled', true);
+            Config::set('prism-transformer.cache.content_fetch.enabled', true);
 
             $fetcher = new BasicHttpFetcher(
                 httpFactory: $this->httpFactory,
@@ -207,7 +207,7 @@ describe('BasicHttpFetcher Caching', function () {
         });
 
         test('handles special characters in cached content', function () {
-            Config::set('prism-transformer.cache.enabled', true);
+            Config::set('prism-transformer.cache.content_fetch.enabled', true);
 
             $fetcher = new BasicHttpFetcher(
                 httpFactory: $this->httpFactory,
@@ -247,8 +247,8 @@ describe('BasicHttpFetcher Caching', function () {
 
     describe('cache TTL behavior', function () {
         test('respects custom TTL configuration for content fetch', function () {
-            Config::set('prism-transformer.cache.enabled', true);
-            Config::set('prism-transformer.cache.ttl.content_fetch', 900); // 15 minutes
+            Config::set('prism-transformer.cache.content_fetch.enabled', true);
+            Config::set('prism-transformer.cache.content_fetch.ttl', 900); // 15 minutes
 
             $configService = new ConfigurationService();
             $ttl = $configService->getContentFetchCacheTtl();
@@ -257,7 +257,7 @@ describe('BasicHttpFetcher Caching', function () {
         });
 
         test('uses default TTL when not configured', function () {
-            Config::set('prism-transformer.cache.enabled', true);
+            Config::set('prism-transformer.cache.content_fetch.enabled', true);
             // Don't set custom TTL
 
             $configService = new ConfigurationService();
@@ -269,7 +269,7 @@ describe('BasicHttpFetcher Caching', function () {
 
     describe('cache behavior when disabled', function () {
         test('bypasses cache when caching is disabled', function () {
-            Config::set('prism-transformer.cache.enabled', false);
+            Config::set('prism-transformer.cache.content_fetch.enabled', false);
 
             $fetcher = new BasicHttpFetcher(
                 httpFactory: $this->httpFactory,
@@ -308,7 +308,7 @@ describe('BasicHttpFetcher Caching', function () {
         });
 
         test('handles cache retrieval errors gracefully', function () {
-            Config::set('prism-transformer.cache.enabled', true);
+            Config::set('prism-transformer.cache.content_fetch.enabled', true);
 
             $fetcher = new BasicHttpFetcher(
                 httpFactory: $this->httpFactory,

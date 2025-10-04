@@ -23,11 +23,12 @@ describe('End-to-End Caching Integration', function () {
         Cache::flush();
 
         // Set up caching configuration
-        Config::set('prism-transformer.cache.enabled', true);
+        Config::set('prism-transformer.cache.transformer_results.enabled', true);
+        Config::set('prism-transformer.cache.content_fetch.enabled', true);
         Config::set('prism-transformer.cache.store', 'default');
         Config::set('prism-transformer.cache.prefix', 'test_prism');
-        Config::set('prism-transformer.cache.ttl.transformer_data', 3600);
-        Config::set('prism-transformer.cache.ttl.content_fetch', 1800);
+        Config::set('prism-transformer.cache.transformer_results.ttl', 3600);
+        Config::set('prism-transformer.cache.content_fetch.ttl', 1800);
 
         $this->cacheManager = $this->app->make(CacheManager::class);
         $this->configurationService = $this->app->make(ConfigurationService::class);
@@ -221,7 +222,8 @@ describe('End-to-End Caching Integration', function () {
 
     describe('cache configuration affects entire system', function () {
         test('disabling cache affects both content fetching and transformation', function () {
-            Config::set('prism-transformer.cache.enabled', false);
+            Config::set('prism-transformer.cache.transformer_results.enabled', false);
+            Config::set('prism-transformer.cache.content_fetch.enabled', false);
 
             $httpFactory = mock(HttpFactory::class);
             $logger = mock(LoggerInterface::class);
@@ -293,12 +295,12 @@ describe('End-to-End Caching Integration', function () {
 
         test('different TTL settings are respected by each cache type', function () {
             // Set very short TTLs for testing
-            Config::set('prism-transformer.cache.ttl.transformer_data', 1);
-            Config::set('prism-transformer.cache.ttl.content_fetch', 2);
+            Config::set('prism-transformer.cache.transformer_results.ttl', 1);
+            Config::set('prism-transformer.cache.content_fetch.ttl', 2);
 
             $configService = new ConfigurationService();
 
-            expect($configService->getTransformerDataCacheTtl())->toBe(1);
+            expect($configService->getTransformerResultsCacheTtl())->toBe(1);
             expect($configService->getContentFetchCacheTtl())->toBe(2);
         });
     });

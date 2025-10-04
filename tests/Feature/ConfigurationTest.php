@@ -262,9 +262,9 @@ describe('Configuration', function () {
             expect($cache)->not->toBeEmpty();
         });
 
-        test('has cache enabled setting', function () {
-            $cacheEnabled = config('prism-transformer.cache.enabled');
-            expect($cacheEnabled)->toBeTrue();
+        test('has cache enabled setting defaulting to false', function () {
+            $cacheEnabled = config('prism-transformer.cache.transformer_results.enabled');
+            expect($cacheEnabled)->toBeFalse();
         });
 
         test('has cache store and prefix settings', function () {

@@ -34,7 +34,7 @@ describe('BaseContentFetcher', function () {
         });
 
         test('implements template method pattern for caching', function () {
-            Config::set('prism-transformer.cache.enabled', true);
+            Config::set('prism-transformer.cache.content_fetch.enabled', true);
 
             $fetcher = new class($this->cacheManager, $this->configurationService) extends BaseContentFetcher
             {
@@ -62,7 +62,7 @@ describe('BaseContentFetcher', function () {
         });
 
         test('supports fetch with custom options', function () {
-            Config::set('prism-transformer.cache.enabled', true);
+            Config::set('prism-transformer.cache.content_fetch.enabled', true);
 
             $fetcher = new class($this->cacheManager, $this->configurationService) extends BaseContentFetcher
             {
@@ -88,7 +88,7 @@ describe('BaseContentFetcher', function () {
 
     describe('cache functionality', function () {
         test('respects cache configuration', function () {
-            Config::set('prism-transformer.cache.enabled', false);
+            Config::set('prism-transformer.cache.content_fetch.enabled', false);
 
             $fetcher = new class($this->cacheManager, $this->configurationService) extends BaseContentFetcher
             {
@@ -131,7 +131,7 @@ describe('BaseContentFetcher', function () {
         });
 
         test('handles cache errors gracefully', function () {
-            Config::set('prism-transformer.cache.enabled', true);
+            Config::set('prism-transformer.cache.content_fetch.enabled', true);
 
             $fetcher = new class($this->cacheManager, $this->configurationService) extends BaseContentFetcher
             {
@@ -260,7 +260,7 @@ describe('BaseContentFetcher', function () {
 
     describe('content validation', function () {
         test('caches valid content', function () {
-            Config::set('prism-transformer.cache.enabled', true);
+            Config::set('prism-transformer.cache.content_fetch.enabled', true);
 
             $fetcher = new class($this->cacheManager, $this->configurationService) extends BaseContentFetcher
             {
@@ -288,7 +288,7 @@ describe('BaseContentFetcher', function () {
         });
 
         test('does not cache empty content', function () {
-            Config::set('prism-transformer.cache.enabled', true);
+            Config::set('prism-transformer.cache.content_fetch.enabled', true);
 
             $fetcher = new class($this->cacheManager, $this->configurationService) extends BaseContentFetcher
             {
@@ -316,7 +316,7 @@ describe('BaseContentFetcher', function () {
         });
 
         test('does not cache whitespace-only content', function () {
-            Config::set('prism-transformer.cache.enabled', true);
+            Config::set('prism-transformer.cache.content_fetch.enabled', true);
 
             $fetcher = new class($this->cacheManager, $this->configurationService) extends BaseContentFetcher
             {
@@ -344,7 +344,7 @@ describe('BaseContentFetcher', function () {
         });
 
         test('can override content validation', function () {
-            Config::set('prism-transformer.cache.enabled', true);
+            Config::set('prism-transformer.cache.content_fetch.enabled', true);
 
             $fetcher = new class($this->cacheManager, $this->configurationService) extends BaseContentFetcher
             {

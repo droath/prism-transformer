@@ -18,10 +18,10 @@ describe('Multi-Provider Cache Performance', function () {
         Cache::flush();
 
         // Set up caching configuration
-        Config::set('prism-transformer.cache.enabled', true);
+        Config::set('prism-transformer.cache.transformer_results.enabled', true);
         Config::set('prism-transformer.cache.store', 'default');
         Config::set('prism-transformer.cache.prefix', 'multi_provider_test');
-        Config::set('prism-transformer.cache.ttl.transformer_data', 3600);
+        Config::set('prism-transformer.cache.transformer_results.ttl', 3600);
 
         $this->cacheManager = $this->app->make(CacheManager::class);
         $this->configurationService = $this->app->make(ConfigurationService::class);
@@ -366,10 +366,10 @@ describe('Multi-Provider Cache Performance', function () {
     describe('provider-specific configuration interaction', function () {
         test('different cache TTL settings can be applied per provider scenario', function () {
             // Test that the cache system works with different TTL configurations
-            Config::set('prism-transformer.cache.ttl.transformer_data', 7200); // 2 hours
+            Config::set('prism-transformer.cache.transformer_results.ttl', 7200); // 2 hours
 
             $configService = new ConfigurationService();
-            expect($configService->getTransformerDataCacheTtl())->toBe(7200);
+            expect($configService->getTransformerResultsCacheTtl())->toBe(7200);
 
             $transformer = new class($this->cacheManager, $this->configurationService, $this->app->make(ModelSchemaService::class)) extends BaseTransformer
             {

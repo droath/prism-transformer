@@ -432,7 +432,7 @@ describe('BaseTransformer TopP Configuration', function () {
     describe('BaseTransformer TopP Integration', function () {
         beforeEach(function () {
             // Disable caching for integration tests
-            config(['prism-transformer.cache.enabled' => false]);
+            config(['prism-transformer.cache.transformer_results.enabled' => false]);
         });
 
         describe('topP integration with performTransformation', function () {
@@ -756,7 +756,7 @@ describe('BaseTransformer TopP Configuration', function () {
 
         describe('topP caching behavior', function () {
             test('topP configuration affects cache key generation', function () {
-                config(['prism-transformer.cache.enabled' => true]);
+                config(['prism-transformer.cache.transformer_results.enabled' => true]);
 
                 $transformer1 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
                 {
@@ -808,7 +808,7 @@ describe('BaseTransformer TopP Configuration', function () {
             });
 
             test('null topP vs specific topP creates different cache entries', function () {
-                config(['prism-transformer.cache.enabled' => true]);
+                config(['prism-transformer.cache.transformer_results.enabled' => true]);
 
                 $transformerNull = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
                 {

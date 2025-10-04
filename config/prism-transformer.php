@@ -158,16 +158,24 @@ return [
     | Configuration for caching transformation results and content to improve
     | performance and reduce API calls.
     |
+    | You can enable/disable caching separately for:
+    | - content_fetch: Caches fetched URL/file content
+    | - transformer_results: Caches AI transformation results
+    |
     */
 
     'cache' => [
-        'enabled' => env('PRISM_TRANSFORMER_CACHE_ENABLED', true),
         'store' => env('PRISM_TRANSFORMER_CACHE_STORE', 'default'),
         'prefix' => env('PRISM_TRANSFORMER_CACHE_PREFIX', 'prism_transformer'),
 
-        'ttl' => [
-            'content_fetch' => env('PRISM_TRANSFORMER_CACHE_TTL_CONTENT', 1800), // 30 minutes
-            'transformer_data' => env('PRISM_TRANSFORMER_CACHE_TTL_TRANSFORMATIONS', 3600), // 1 hour
+        'content_fetch' => [
+            'enabled' => env('PRISM_TRANSFORMER_CACHE_CONTENT_ENABLED', false),
+            'ttl' => env('PRISM_TRANSFORMER_CACHE_TTL_CONTENT', 1800), // 30 minutes
+        ],
+
+        'transformer_results' => [
+            'enabled' => env('PRISM_TRANSFORMER_CACHE_RESULTS_ENABLED', false),
+            'ttl' => env('PRISM_TRANSFORMER_CACHE_TTL_RESULTS', 3600), // 1 hour
         ],
     ],
 

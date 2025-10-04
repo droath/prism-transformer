@@ -42,69 +42,23 @@ class ConfigurationService
     }
 
     /**
-     * Get configuration for a specific provider.
+     * Check if content fetch caching is enabled.
      *
-     * @param Provider $provider The provider to get configuration for.
-     *
-     * @return array<string, mixed> The provider configuration array.
+     * @return bool True if content fetch caching is enabled, false otherwise.
      */
-    public function getProviderConfig(Provider $provider): array
+    public function isContentFetchCacheEnabled(): bool
     {
-        return $provider->getConfig();
+        return (bool) config('prism-transformer.cache.content_fetch.enabled', false);
     }
 
     /**
-     * Get a specific configuration value for a provider.
+     * Check if transformer results caching is enabled.
      *
-     * @param Provider $provider The provider to get configuration for.
-     * @param string $key The configuration key to retrieve.
-     * @param mixed $default The default value if the key doesn't exist.
-     *
-     * @return mixed The configuration value or default.
+     * @return bool True if transformer results caching is enabled, false otherwise.
      */
-    public function getProviderConfigValue(Provider $provider, string $key, mixed $default = null): mixed
+    public function isTransformerResultsCacheEnabled(): bool
     {
-        return $provider->getConfigValue($key, $default);
-    }
-
-    /**
-     * Get content fetcher configuration.
-     *
-     * @return array<string, mixed> The content fetcher configuration.
-     */
-    public function getContentFetcherConfig(): array
-    {
-        return config('prism-transformer.content_fetcher', []);
-    }
-
-    /**
-     * Get transformation configuration.
-     *
-     * @return array<string, mixed> The transformation configuration.
-     */
-    public function getTransformationConfig(): array
-    {
-        return config('prism-transformer.transformation', []);
-    }
-
-    /**
-     * Get cache configuration.
-     *
-     * @return array<string, mixed> The cache configuration.
-     */
-    public function getCacheConfig(): array
-    {
-        return config('prism-transformer.cache', []);
-    }
-
-    /**
-     * Check if caching is enabled.
-     *
-     * @return bool True if caching is enabled, false otherwise.
-     */
-    public function isCacheEnabled(): bool
-    {
-        return (bool) config('prism-transformer.cache.enabled', true);
+        return (bool) config('prism-transformer.cache.transformer_results.enabled', false);
     }
 
     /**
@@ -128,36 +82,23 @@ class ConfigurationService
     }
 
     /**
-     * Get all cache TTL configuration.
-     *
-     * @return array<string, int> The cache TTL configuration.
-     */
-    public function getCacheTtlConfig(): array
-    {
-        return config('prism-transformer.cache.ttl', [
-            'content_fetch' => 1800,
-            'transformer_data' => 3600,
-        ]);
-    }
-
-    /**
      * Get the TTL for content fetch caching.
      *
      * @return int The TTL in seconds.
      */
     public function getContentFetchCacheTtl(): int
     {
-        return (int) config('prism-transformer.cache.ttl.content_fetch', 1800);
+        return (int) config('prism-transformer.cache.content_fetch.ttl', 1800);
     }
 
     /**
-     * Get the TTL for transformer data caching.
+     * Get the TTL for transformer results caching.
      *
      * @return int The TTL in seconds.
      */
-    public function getTransformerDataCacheTtl(): int
+    public function getTransformerResultsCacheTtl(): int
     {
-        return (int) config('prism-transformer.cache.ttl.transformer_data', 3600);
+        return (int) config('prism-transformer.cache.transformer_results.ttl', 3600);
     }
 
     /**
@@ -168,36 +109,6 @@ class ConfigurationService
     public function getHttpTimeout(): int
     {
         return (int) config('prism-transformer.content_fetcher.timeout', 30);
-    }
-
-    /**
-     * Get HTTP connect timeout for content fetching.
-     *
-     * @return int The connect timeout in seconds.
-     */
-    public function getHttpConnectTimeout(): int
-    {
-        return (int) config('prism-transformer.content_fetcher.connect_timeout', 10);
-    }
-
-    /**
-     * Get retry configuration for content fetching.
-     *
-     * @return array<string, mixed> The retry configuration.
-     */
-    public function getRetryConfig(): array
-    {
-        return config('prism-transformer.content_fetcher.retry', []);
-    }
-
-    /**
-     * Get validation configuration for content fetching.
-     *
-     * @return array<string, mixed> The validation configuration.
-     */
-    public function getValidationConfig(): array
-    {
-        return config('prism-transformer.content_fetcher.validation', []);
     }
 
     /**
@@ -218,16 +129,6 @@ class ConfigurationService
     public function getQueueConnection(): ?string
     {
         return config('prism-transformer.transformation.queue_connection');
-    }
-
-    /**
-     * Get effective queue connection (package config or Laravel default).
-     *
-     * @return string The effective queue connection name.
-     */
-    public function getEffectiveQueueConnection(): string
-    {
-        return $this->getQueueConnection() ?? config('queue.default', 'sync');
     }
 
     /**
@@ -303,47 +204,5 @@ class ConfigurationService
     public function isRateLimitingEnabled(): bool
     {
         return (bool) config('prism-transformer.rate_limiting.enabled', true);
-    }
-
-    /**
-     * Get all available providers with their configurations.
-     *
-     * @return array<string, array<string, mixed>> All provider configurations indexed by provider value.
-     */
-    public function getAllProviderConfigs(): array
-    {
-        $configs = [];
-
-        foreach (Provider::cases() as $provider) {
-            $configs[$provider->value] = $provider->getConfig();
-        }
-
-        return $configs;
-    }
-
-    /**
-     * Validate that all required configuration sections exist.
-     *
-     * @return array<string> Array of missing configuration sections.
-     */
-    public function validateConfiguration(): array
-    {
-        $missing = [];
-        $requiredSections = [
-            'default_provider',
-            'providers',
-            'content_fetcher',
-            'transformation',
-            'cache',
-            'rate_limiting',
-        ];
-
-        foreach ($requiredSections as $section) {
-            if (! config()->has("prism-transformer.{$section}")) {
-                $missing[] = $section;
-            }
-        }
-
-        return $missing;
     }
 }

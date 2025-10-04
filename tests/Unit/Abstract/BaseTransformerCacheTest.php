@@ -32,10 +32,10 @@ describe('BaseTransformer Caching', function () {
     describe('cache configuration integration', function () {
         test('uses configuration service for cache settings', function () {
             $configMock = mock(ConfigurationService::class);
-            $configMock->shouldReceive('isCacheEnabled')->andReturn(true);
+            $configMock->shouldReceive('isTransformerResultsCacheEnabled')->andReturn(true);
             $configMock->shouldReceive('getCacheStore')->andReturn('default');
             $configMock->shouldReceive('getCachePrefix')->andReturn('prism_transformer');
-            $configMock->shouldReceive('getTransformerDataCacheTtl')->andReturn(3600);
+            $configMock->shouldReceive('getTransformerResultsCacheTtl')->andReturn(3600);
             $configMock->shouldReceive('getDefaultProvider')->andReturn(Provider::OPENAI);
 
             $transformer = new class($this->app->make(CacheManager::class), $configMock, $this->app->make(ModelSchemaService::class)) extends BaseTransformer
@@ -51,20 +51,20 @@ describe('BaseTransformer Caching', function () {
         });
 
         test('respects cache enabled configuration', function () {
-            Config::set('prism-transformer.cache.enabled', false);
+            Config::set('prism-transformer.cache.transformer_results.enabled', false);
 
             $configService = new ConfigurationService();
-            $isCacheEnabled = $configService->isCacheEnabled();
+            $isTransformerResultsCacheEnabled = $configService->isTransformerResultsCacheEnabled();
 
-            expect($isCacheEnabled)->toBeFalse();
+            expect($isTransformerResultsCacheEnabled)->toBeFalse();
         });
 
         test('respects cache TTL configuration', function () {
-            Config::set('prism-transformer.cache.enabled', true);
-            Config::set('prism-transformer.cache.ttl.transformer_data', 7200);
+            Config::set('prism-transformer.cache.transformer_results.enabled', true);
+            Config::set('prism-transformer.cache.transformer_results.ttl', 7200);
 
             $configService = new ConfigurationService();
-            $ttl = $configService->getTransformerDataCacheTtl();
+            $ttl = $configService->getTransformerResultsCacheTtl();
 
             expect($ttl)->toBe(7200);
         });
@@ -72,7 +72,7 @@ describe('BaseTransformer Caching', function () {
 
     describe('cache behavior through public interface', function () {
         test('caches transformation results consistently', function () {
-            Config::set('prism-transformer.cache.enabled', true);
+            Config::set('prism-transformer.cache.transformer_results.enabled', true);
 
             // Create a testable transformer that tracks calls
             $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
@@ -106,7 +106,7 @@ describe('BaseTransformer Caching', function () {
         });
 
         test('different transformers use different cache keys', function () {
-            Config::set('prism-transformer.cache.enabled', true);
+            Config::set('prism-transformer.cache.transformer_results.enabled', true);
 
             $transformer1 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
@@ -223,7 +223,7 @@ describe('BaseTransformer Caching', function () {
 
     describe('cache storage through public interface', function () {
         test('stores and retrieves successful transformation results', function () {
-            Config::set('prism-transformer.cache.enabled', true);
+            Config::set('prism-transformer.cache.transformer_results.enabled', true);
 
             $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
@@ -261,7 +261,7 @@ describe('BaseTransformer Caching', function () {
         });
 
         test('does not cache failed transformation results', function () {
-            Config::set('prism-transformer.cache.enabled', true);
+            Config::set('prism-transformer.cache.transformer_results.enabled', true);
 
             $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
@@ -299,7 +299,7 @@ describe('BaseTransformer Caching', function () {
         });
 
         test('preserves metadata in cached results', function () {
-            Config::set('prism-transformer.cache.enabled', true);
+            Config::set('prism-transformer.cache.transformer_results.enabled', true);
 
             $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
@@ -332,7 +332,7 @@ describe('BaseTransformer Caching', function () {
         });
 
         test('handles special characters in cached content', function () {
-            Config::set('prism-transformer.cache.enabled', true);
+            Config::set('prism-transformer.cache.transformer_results.enabled', true);
 
             $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
@@ -360,31 +360,31 @@ describe('BaseTransformer Caching', function () {
 
     describe('cache TTL behavior', function () {
         test('respects custom TTL configuration for transformer data', function () {
-            Config::set('prism-transformer.cache.enabled', true);
-            Config::set('prism-transformer.cache.ttl.transformer_data', 1800); // 30 minutes
+            Config::set('prism-transformer.cache.transformer_results.enabled', true);
+            Config::set('prism-transformer.cache.transformer_results.ttl', 1800); // 30 minutes
 
             $configService = new ConfigurationService();
-            $ttl = $configService->getTransformerDataCacheTtl();
+            $ttl = $configService->getTransformerResultsCacheTtl();
 
             expect($ttl)->toBe(1800);
         });
 
         test('uses default TTL when not configured', function () {
-            Config::set('prism-transformer.cache.enabled', true);
+            Config::set('prism-transformer.cache.transformer_results.enabled', true);
             // Don't set custom TTL
 
             $configService = new ConfigurationService();
-            $ttl = $configService->getTransformerDataCacheTtl();
+            $ttl = $configService->getTransformerResultsCacheTtl();
 
             expect($ttl)->toBe(3600); // Default 1 hour
         });
 
         test('respects TTL configuration', function () {
-            Config::set('prism-transformer.cache.enabled', true);
-            Config::set('prism-transformer.cache.ttl.transformer_data', 1800); // 30 minutes
+            Config::set('prism-transformer.cache.transformer_results.enabled', true);
+            Config::set('prism-transformer.cache.transformer_results.ttl', 1800); // 30 minutes
 
             $configService = new ConfigurationService();
-            $ttl = $configService->getTransformerDataCacheTtl();
+            $ttl = $configService->getTransformerResultsCacheTtl();
 
             expect($ttl)->toBe(1800);
         });
@@ -392,7 +392,7 @@ describe('BaseTransformer Caching', function () {
 
     describe('cache behavior when disabled', function () {
         test('bypasses cache when caching is disabled', function () {
-            Config::set('prism-transformer.cache.enabled', false);
+            Config::set('prism-transformer.cache.transformer_results.enabled', false);
 
             $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
@@ -423,7 +423,7 @@ describe('BaseTransformer Caching', function () {
         });
 
         test('handles cache retrieval errors gracefully', function () {
-            Config::set('prism-transformer.cache.enabled', true);
+            Config::set('prism-transformer.cache.transformer_results.enabled', true);
 
             $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
@@ -454,7 +454,7 @@ describe('BaseTransformer Caching', function () {
 
     describe('cache isolation', function () {
         test('different transformer instances use separate caches', function () {
-            Config::set('prism-transformer.cache.enabled', true);
+            Config::set('prism-transformer.cache.transformer_results.enabled', true);
 
             $transformer1 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
@@ -541,8 +541,8 @@ describe('BaseTransformer Caching', function () {
 
             // Clear cache before each test
             Cache::flush();
-            Config::set('prism-transformer.cache.enabled', true);
-            Config::set('prism-transformer.cache.ttl.transformer_data', 3600);
+            Config::set('prism-transformer.cache.transformer_results.enabled', true);
+            Config::set('prism-transformer.cache.transformer_results.ttl', 3600);
         });
 
         test('returns cached result when available', function () {
@@ -589,7 +589,7 @@ describe('BaseTransformer Caching', function () {
         });
 
         test('bypasses cache when caching is disabled', function () {
-            Config::set('prism-transformer.cache.enabled', false);
+            Config::set('prism-transformer.cache.transformer_results.enabled', false);
 
             $content = 'Test content without caching';
 
@@ -669,6 +669,8 @@ describe('BaseTransformer Caching', function () {
 
     describe('cache isolation behavior', function () {
         test('different transformers maintain separate caches', function () {
+            Config::set('prism-transformer.cache.transformer_results.enabled', true);
+
             $transformer1 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {
                 public int $transformationCount = 0;
@@ -797,7 +799,7 @@ describe('BaseTransformer Caching', function () {
                 }
             };
 
-            Config::set('prism-transformer.cache.ttl.transformer_data', 1800); // 30 minutes
+            Config::set('prism-transformer.cache.transformer_results.ttl', 1800); // 30 minutes
 
             $content = 'Test content for TTL';
 
@@ -822,13 +824,255 @@ describe('BaseTransformer Caching', function () {
             };
 
             // Remove TTL configuration to test default
-            Config::set('prism-transformer.cache.ttl.transformer_data', null);
+            Config::set('prism-transformer.cache.transformer_results.ttl', null);
 
             $content = 'Test content for default TTL';
 
             $result = $transformer->execute($content);
 
             expect($result->data)->toBe("Transformed: {$content}");
+        });
+    });
+
+    describe('cache key includes content', function () {
+        test('different content produces different cached results', function () {
+            Config::set('prism-transformer.cache.transformer_results.enabled', true);
+
+            $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
+            {
+                public int $callCount = 0;
+
+                public function prompt(): string
+                {
+                    return 'Transform this content';
+                }
+
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
+                {
+                    $this->callCount++;
+
+                    return TransformerResult::successful("Transformed: {$content}");
+                }
+            };
+
+            // Transform first content
+            $result1 = $transformer->execute('First content');
+            expect($result1->data)->toBe('Transformed: First content');
+            expect($transformer->callCount)->toBe(1);
+
+            // Transform different content - should NOT use cached result from first content
+            $result2 = $transformer->execute('Second content');
+            expect($result2->data)->toBe('Transformed: Second content');
+            expect($transformer->callCount)->toBe(2); // Should transform again
+
+            // Transform first content again - should use cache
+            $result3 = $transformer->execute('First content');
+            expect($result3->data)->toBe('Transformed: First content');
+            expect($transformer->callCount)->toBe(2); // Should NOT increment
+
+            // Transform second content again - should use cache
+            $result4 = $transformer->execute('Second content');
+            expect($result4->data)->toBe('Transformed: Second content');
+            expect($transformer->callCount)->toBe(2); // Should NOT increment
+        });
+
+        test('cache properly isolates by content value', function () {
+            Config::set('prism-transformer.cache.transformer_results.enabled', true);
+
+            $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
+            {
+                public int $callCount = 0;
+
+                public function prompt(): string
+                {
+                    return 'Transform this content';
+                }
+
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
+                {
+                    $this->callCount++;
+
+                    return TransformerResult::successful("Result for: {$content}");
+                }
+            };
+
+            // Transform content A
+            $resultA = $transformer->execute('Content A');
+            expect($resultA->data)->toBe('Result for: Content A');
+            expect($transformer->callCount)->toBe(1);
+
+            // Transform content B - should NOT use cache from A
+            $resultB = $transformer->execute('Content B');
+            expect($resultB->data)->toBe('Result for: Content B');
+            expect($transformer->callCount)->toBe(2);
+
+            // Transform content A again - should use cache
+            $resultA2 = $transformer->execute('Content A');
+            expect($resultA2->data)->toBe('Result for: Content A');
+            expect($transformer->callCount)->toBe(2); // Should NOT increment
+        });
+
+        test('different context arrays produce different cache keys', function () {
+            Config::set('prism-transformer.cache.transformer_results.enabled', true);
+
+            $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
+            {
+                public int $callCount = 0;
+
+                public function prompt(): string
+                {
+                    return 'Transform content with context';
+                }
+
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
+                {
+                    $this->callCount++;
+                    $userId = $context['user_id'] ?? 'no user';
+
+                    return TransformerResult::successful("User {$userId}: {$content}");
+                }
+            };
+
+            $content = 'Test content';
+
+            // User 1 transforms content
+            $result1 = $transformer->execute($content, ['user_id' => 1]);
+            expect($result1->data)->toBe('User 1: Test content');
+            expect($transformer->callCount)->toBe(1);
+
+            // User 2 transforms same content - should NOT use User 1's cache
+            $result2 = $transformer->execute($content, ['user_id' => 2]);
+            expect($result2->data)->toBe('User 2: Test content');
+            expect($transformer->callCount)->toBe(2); // Should transform again
+
+            // User 1 transforms again - should use their cache
+            $result1b = $transformer->execute($content, ['user_id' => 1]);
+            expect($result1b->data)->toBe('User 1: Test content');
+            expect($transformer->callCount)->toBe(2); // Should NOT increment
+
+            // User 2 transforms again - should use their cache
+            $result2b = $transformer->execute($content, ['user_id' => 2]);
+            expect($result2b->data)->toBe('User 2: Test content');
+            expect($transformer->callCount)->toBe(2); // Should NOT increment
+        });
+
+        test('empty context differs from non-empty context', function () {
+            Config::set('prism-transformer.cache.transformer_results.enabled', true);
+
+            $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
+            {
+                public int $callCount = 0;
+
+                public function prompt(): string
+                {
+                    return 'Transform with or without context';
+                }
+
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
+                {
+                    $this->callCount++;
+                    $hasContext = ! empty($context);
+
+                    return TransformerResult::successful($hasContext ? "With context: {$content}" : "No context: {$content}");
+                }
+            };
+
+            $content = 'Test content';
+
+            // Transform without context
+            $result1 = $transformer->execute($content);
+            expect($result1->data)->toBe('No context: Test content');
+            expect($transformer->callCount)->toBe(1);
+
+            // Transform with context - should NOT use previous cache
+            $result2 = $transformer->execute($content, ['key' => 'value']);
+            expect($result2->data)->toBe('With context: Test content');
+            expect($transformer->callCount)->toBe(2); // Should transform again
+
+            // Transform without context again - should use cache
+            $result1b = $transformer->execute($content);
+            expect($result1b->data)->toBe('No context: Test content');
+            expect($transformer->callCount)->toBe(2); // Should NOT increment
+        });
+
+        test('complex context with nested data is properly isolated', function () {
+            Config::set('prism-transformer.cache.transformer_results.enabled', true);
+
+            $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
+            {
+                public int $callCount = 0;
+
+                public function prompt(): string
+                {
+                    return 'Transform with nested context';
+                }
+
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
+                {
+                    $this->callCount++;
+                    $tenantId = $context['tenant']['id'] ?? 'no tenant';
+
+                    return TransformerResult::successful("Tenant {$tenantId}: {$content}");
+                }
+            };
+
+            $content = 'Test content';
+
+            // Tenant A
+            $contextA = ['tenant' => ['id' => 'A', 'name' => 'Tenant A']];
+            $resultA = $transformer->execute($content, $contextA);
+            expect($resultA->data)->toBe('Tenant A: Test content');
+            expect($transformer->callCount)->toBe(1);
+
+            // Tenant B - should NOT use Tenant A's cache
+            $contextB = ['tenant' => ['id' => 'B', 'name' => 'Tenant B']];
+            $resultB = $transformer->execute($content, $contextB);
+            expect($resultB->data)->toBe('Tenant B: Test content');
+            expect($transformer->callCount)->toBe(2);
+
+            // Tenant A again - should use cache
+            $resultA2 = $transformer->execute($content, $contextA);
+            expect($resultA2->data)->toBe('Tenant A: Test content');
+            expect($transformer->callCount)->toBe(2); // Should NOT increment
+        });
+
+        test('context with same keys but different values use different cache', function () {
+            Config::set('prism-transformer.cache.transformer_results.enabled', true);
+
+            $transformer = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
+            {
+                public int $callCount = 0;
+
+                public function prompt(): string
+                {
+                    return 'Transform with varying context values';
+                }
+
+                protected function performTransformation(string|\Prism\Prism\ValueObjects\Media\Media $content, array $context = []): TransformerResult
+                {
+                    $this->callCount++;
+                    $role = $context['role'] ?? 'guest';
+
+                    return TransformerResult::successful("Role {$role}: {$content}");
+                }
+            };
+
+            $content = 'Test content';
+
+            // Admin role
+            $result1 = $transformer->execute($content, ['role' => 'admin']);
+            expect($result1->data)->toBe('Role admin: Test content');
+            expect($transformer->callCount)->toBe(1);
+
+            // User role - same key, different value
+            $result2 = $transformer->execute($content, ['role' => 'user']);
+            expect($result2->data)->toBe('Role user: Test content');
+            expect($transformer->callCount)->toBe(2);
+
+            // Admin again - should use cache
+            $result1b = $transformer->execute($content, ['role' => 'admin']);
+            expect($result1b->data)->toBe('Role admin: Test content');
+            expect($transformer->callCount)->toBe(2); // Should NOT increment
         });
     });
 });

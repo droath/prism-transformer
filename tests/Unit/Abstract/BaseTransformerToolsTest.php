@@ -320,7 +320,7 @@ describe('BaseTransformer Tools Configuration', function () {
     describe('tools integration with performTransformation', function () {
         beforeEach(function () {
             // Disable caching for integration tests
-            config(['prism-transformer.cache.enabled' => false]);
+            config(['prism-transformer.cache.transformer_results.enabled' => false]);
         });
 
         test('calls withTools when tools are defined', function () {
@@ -590,7 +590,7 @@ describe('BaseTransformer Tools Configuration', function () {
 
     describe('tools caching behavior', function () {
         test('tools configuration affects cache key generation', function () {
-            config(['prism-transformer.cache.enabled' => true]);
+            config(['prism-transformer.cache.transformer_results.enabled' => true]);
 
             $transformer1 = new class($this->app->make(CacheManager::class), $this->app->make(ConfigurationService::class), $this->app->make(\Droath\PrismTransformer\Services\ModelSchemaService::class)) extends BaseTransformer
             {

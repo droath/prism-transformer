@@ -143,7 +143,8 @@ abstract class TransformerTestCase extends TestCase
      */
     protected function disableCache(): void
     {
-        Config::set('prism-transformer.cache.enabled', false);
+        Config::set('prism-transformer.cache.transformer_results.enabled', false);
+        Config::set('prism-transformer.cache.content_fetch.enabled', false);
     }
 
     /**
@@ -151,7 +152,8 @@ abstract class TransformerTestCase extends TestCase
      */
     protected function enableCache(): void
     {
-        Config::set('prism-transformer.cache.enabled', true);
+        Config::set('prism-transformer.cache.transformer_results.enabled', true);
+        Config::set('prism-transformer.cache.content_fetch.enabled', true);
     }
 
     /**

@@ -311,7 +311,7 @@ describe('BasicHttpFetcher Options Support', function () {
             ]);
 
             // Enable caching
-            config(['prism-transformer.cache.enabled' => true]);
+            config(['prism-transformer.cache.content_fetch.enabled' => true]);
 
             // First request with GET
             $result1 = $this->fetcher->fetch('https://example.com/api', [
@@ -336,7 +336,7 @@ describe('BasicHttpFetcher Options Support', function () {
             ]);
 
             // Enable caching
-            config(['prism-transformer.cache.enabled' => true]);
+            config(['prism-transformer.cache.content_fetch.enabled' => true]);
 
             $options = ['method' => 'GET', 'headers' => ['Accept' => 'application/json']];
 

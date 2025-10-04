@@ -124,11 +124,11 @@ abstract class BaseContentFetcher implements ContentFetcherInterface
     }
 
     /**
-     * Check if caching is enabled.
+     * Check if content fetch caching is enabled.
      */
     protected function isCacheEnabled(): bool
     {
-        return $this->configuration?->isCacheEnabled() ?? false;
+        return $this->configuration !== null && $this->configuration->isContentFetchCacheEnabled();
     }
 
     /**

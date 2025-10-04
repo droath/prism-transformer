@@ -373,8 +373,8 @@ describe('BaseTransformer System Prompt Configuration', function () {
                 $cacheIdMethodWithout = $reflectionWithout->getMethod('cacheId');
                 $cacheIdMethodWithout->setAccessible(true);
 
-                $cacheIdWith = $cacheIdMethodWith->invoke($transformerWithSystemPrompt);
-                $cacheIdWithout = $cacheIdMethodWithout->invoke($transformerWithoutSystemPrompt);
+                $cacheIdWith = $cacheIdMethodWith->invoke($transformerWithSystemPrompt, 'test content', []);
+                $cacheIdWithout = $cacheIdMethodWithout->invoke($transformerWithoutSystemPrompt, 'test content', []);
 
                 // Different system prompts should generate different cache keys
                 expect($cacheIdWith)->not->toBe($cacheIdWithout);
@@ -415,8 +415,8 @@ describe('BaseTransformer System Prompt Configuration', function () {
                 $cacheIdMethod2 = $reflection2->getMethod('cacheId');
                 $cacheIdMethod2->setAccessible(true);
 
-                $cacheId1 = $cacheIdMethod1->invoke($transformer1);
-                $cacheId2 = $cacheIdMethod2->invoke($transformer2);
+                $cacheId1 = $cacheIdMethod1->invoke($transformer1, 'test content', []);
+                $cacheId2 = $cacheIdMethod2->invoke($transformer2, 'test content', []);
 
                 expect($cacheId1)->not->toBe($cacheId2);
             });

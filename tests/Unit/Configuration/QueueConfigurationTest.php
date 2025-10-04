@@ -331,7 +331,7 @@ describe('Queue Configuration', function () {
                 ->and($configService->getTries())->toBe(7);
         });
 
-        test('configuration service effective queue connection resolution', function () {
+        test('configuration service queue connection resolution', function () {
             config([
                 'queue.default' => 'sync',
                 'prism-transformer.transformation.queue_connection' => null,
@@ -339,11 +339,11 @@ describe('Queue Configuration', function () {
 
             $configService = app(ConfigurationService::class);
 
-            expect($configService->getEffectiveQueueConnection())->toBe('sync');
+            expect($configService->getQueueConnection())->toBeNull();
 
             config(['prism-transformer.transformation.queue_connection' => 'database']);
 
-            expect($configService->getEffectiveQueueConnection())->toBe('database');
+            expect($configService->getQueueConnection())->toBe('database');
         });
     });
 
@@ -548,12 +548,13 @@ describe('Queue Configuration', function () {
                 ->and($job->timeout)->toBe(60); // Default
         });
 
-        test('configuration service validates required sections', function () {
+        test('configuration service provides access to configuration', function () {
             $configService = app(ConfigurationService::class);
-            $missing = $configService->validateConfiguration();
 
-            // Should validate that all required sections exist
-            expect($missing)->toBeArray();
+            // Should be able to access all required configuration
+            expect($configService->getDefaultProvider())->toBeInstanceOf(\Droath\PrismTransformer\Enums\Provider::class);
+            expect($configService->getCacheStore())->toBeString();
+            expect($configService->getAsyncQueue())->not->toBeNull();
         });
 
         test('rate limiting service handles missing rate limiter gracefully', function () {
@@ -572,7 +573,7 @@ describe('Queue Configuration', function () {
     });
 
     describe('Configuration Inheritance', function () {
-        test('inherits Laravel queue configuration when package connection is null', function () {
+        test('returns null when package connection is not set', function () {
             config([
                 'queue.default' => 'redis',
                 'prism-transformer.transformation.queue_connection' => null,
@@ -580,11 +581,10 @@ describe('Queue Configuration', function () {
 
             $configService = app(ConfigurationService::class);
 
-            // Should fall back to Laravel's default queue connection
-            expect($configService->getEffectiveQueueConnection())->toBe('redis');
+            expect($configService->getQueueConnection())->toBeNull();
         });
 
-        test('overrides Laravel queue configuration when package connection is set', function () {
+        test('returns configured queue connection when set', function () {
             config([
                 'queue.default' => 'sync',
                 'prism-transformer.transformation.queue_connection' => 'database',
@@ -592,7 +592,7 @@ describe('Queue Configuration', function () {
 
             $configService = app(ConfigurationService::class);
 
-            expect($configService->getEffectiveQueueConnection())->toBe('database');
+            expect($configService->getQueueConnection())->toBe('database');
         });
     });
 })->group('configuration', 'queue', 'unit', 'integration', 'rate-limiting');
