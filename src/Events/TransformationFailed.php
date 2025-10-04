@@ -11,8 +11,8 @@ use Prism\Prism\ValueObjects\Media\Media;
 /**
  * Event dispatched when a transformation job fails.
  *
- * This event is fired when a transformation job encounters an exception
- * during execution, providing access to the exception details and context
+ * This event is fired when a transformation job encounters an error
+ * during execution, providing access to the error details and context
  * for error handling and monitoring.
  */
 class TransformationFailed
@@ -23,12 +23,12 @@ class TransformationFailed
     /**
      * Create a new event instance.
      *
-     * @param \Exception $exception The exception that caused the failure
+     * @param \Throwable $exception The exception that caused the failure
      * @param string|\Prism\Prism\ValueObjects\Media\Media|null $content The content that was being transformed (string or Media object)
      * @param array $context Additional context data (user_id, tenant_id, etc.)
      */
     public function __construct(
-        public readonly \Exception $exception,
+        public readonly \Throwable $exception,
         public readonly string|Media|null $content,
         public readonly array $context = []
     ) {}

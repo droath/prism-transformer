@@ -39,7 +39,7 @@ class DocumentTransformerHandler extends MediaTransformerHandler
                     "Unsupported inputType: {$this->inputType}"
                 ),
             };
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             throw new InvalidArgumentException(
                 "Failed to process document: {$e->getMessage()}", 0, $e
             );

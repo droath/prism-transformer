@@ -16,5 +16,3 @@ parameters:
             message: "#Called 'env' outside of the config directory#"
             paths:
                 - config/*.php
-    excludePaths:
-        - config/prism-transformer.php

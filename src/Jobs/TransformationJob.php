@@ -111,7 +111,7 @@ class TransformationJob implements ShouldQueue
             Event::dispatch(
                 new TransformationCompleted($result, $this->context)
             );
-        } catch (\Exception $exception) {
+        } catch (\Throwable $exception) {
             Event::dispatch(new TransformationFailed(
                 $exception,
                 $content,
