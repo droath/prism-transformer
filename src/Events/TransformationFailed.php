@@ -6,6 +6,7 @@ namespace Droath\PrismTransformer\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Prism\Prism\ValueObjects\Media\Media;
 
 /**
  * Event dispatched when a transformation job fails.
@@ -23,12 +24,12 @@ class TransformationFailed
      * Create a new event instance.
      *
      * @param \Exception $exception The exception that caused the failure
-     * @param string $content The content that was being transformed
+     * @param string|\Prism\Prism\ValueObjects\Media\Media|null $content The content that was being transformed (string or Media object)
      * @param array $context Additional context data (user_id, tenant_id, etc.)
      */
     public function __construct(
         public readonly \Exception $exception,
-        public readonly string $content,
+        public readonly string|Media|null $content,
         public readonly array $context = []
     ) {}
 }

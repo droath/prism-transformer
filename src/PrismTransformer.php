@@ -10,6 +10,7 @@ use Droath\PrismTransformer\Handlers\DocumentTransformerHandler;
 use Droath\PrismTransformer\Contracts\PrismTransformerInterface;
 use Droath\PrismTransformer\Contracts\TransformerInterface;
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
+use Droath\PrismTransformer\ValueObjects\QueueableMedia;
 use Droath\PrismTransformer\Contracts\ContentFetcherInterface;
 use Droath\PrismTransformer\Services\RateLimitService;
 use Illuminate\Foundation\Bus\PendingDispatch;
@@ -250,15 +251,9 @@ class PrismTransformer implements PrismTransformerInterface
     protected function handleAsyncTransformation(
         \Closure|TransformerInterface $handler
     ): TransformerResult|PendingDispatch|null {
-        // Convert Media objects to base64 strings for queue serialization
-        // Laravel queues use JSON which can't handle binary data
-        $content = $this->content instanceof Media
-            ? $this->content->base64()
-            : $this->content;
-
         return TransformationJob::dispatch(
             $handler,
-            $content,
+            $this->resolveContent(),
             $this->buildContext()
         );
     }
@@ -292,6 +287,21 @@ class PrismTransformer implements PrismTransformerInterface
             'input' => $this->input,
             ...$this->context,
         ];
+    }
+
+    /**
+     * Resolve the content for async queue dispatch.
+     *
+     * Wraps Media objects in QueueableMedia for queue serialization.
+     * Laravel queues use JSON which can't handle binary data, so we
+     * convert Media objects to a queue-safe wrapper. Regular strings
+     * pass through unchanged.
+     */
+    protected function resolveContent(): string|QueueableMedia|null
+    {
+        return $this->content instanceof Media
+            ? QueueableMedia::fromMedia($this->content)
+            : $this->content;
     }
 
     /**

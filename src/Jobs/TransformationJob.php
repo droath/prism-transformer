@@ -9,6 +9,7 @@ use Droath\PrismTransformer\Events\TransformationStarted;
 use Droath\PrismTransformer\Events\TransformationCompleted;
 use Droath\PrismTransformer\Events\TransformationFailed;
 use Droath\PrismTransformer\Services\ConfigurationService;
+use Droath\PrismTransformer\ValueObjects\QueueableMedia;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\Log;
 use Laravel\SerializableClosure\SerializableClosure;
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
 use Droath\PrismTransformer\Exceptions\TransformerException;
+use Prism\Prism\ValueObjects\Media\Media;
 
 /**
  * Queue job for processing data transformations asynchronously.
@@ -48,12 +50,12 @@ class TransformationJob implements ShouldQueue
      * Create a new job instance.
      *
      * @param \Droath\PrismTransformer\Contracts\TransformerInterface|\Closure|\Laravel\SerializableClosure\SerializableClosure $handler The transformer instance or closure to execute
-     * @param string|null $content The content to transform (Media objects are converted to base64 strings before queuing)
+     * @param string|QueueableMedia|null $content The content to transform (QueueableMedia for Media objects, string otherwise)
      * @param array $context Additional context data (user_id, tenant_id, etc.)
      */
     public function __construct(
         public TransformerInterface|\Closure|SerializableClosure $handler,
-        public ?string $content,
+        public string|QueueableMedia|null $content,
         public array $context = []
     ) {
         $configService = app(ConfigurationService::class);
@@ -82,8 +84,10 @@ class TransformationJob implements ShouldQueue
      */
     public function handle(): void
     {
+        $content = $this->resolveContent();
+
         Event::dispatch(new TransformationStarted(
-            $this->content,
+            $content,
             $this->context
         ));
 
@@ -91,11 +95,11 @@ class TransformationJob implements ShouldQueue
             $result = null;
 
             if (is_callable($this->handler)) {
-                $result = ($this->handler)($this->content, $this->context);
+                $result = ($this->handler)($content, $this->context);
             }
 
             if ($this->handler instanceof TransformerInterface) {
-                $result = $this->handler->execute($this->content, $this->context);
+                $result = $this->handler->execute($content, $this->context);
             }
 
             if (! $result instanceof TransformerResult) {
@@ -110,7 +114,7 @@ class TransformationJob implements ShouldQueue
         } catch (\Exception $exception) {
             Event::dispatch(new TransformationFailed(
                 $exception,
-                $this->content,
+                $content,
                 $this->context
             ));
 
@@ -133,16 +137,36 @@ class TransformationJob implements ShouldQueue
             default => get_class($this->handler),
         };
 
+        $content = $this->resolveContent();
+
         Log::error('TransformationJob failed after all retry attempts', [
             'exception' => $exception->getMessage(),
-            'content_type' => is_string($this->content) ? 'string' : get_class($this->content),
-            'content_length' => is_string($this->content) ? strlen($this->content) : null,
+            'content_type' => match (true) {
+                $content instanceof Media => get_class($content),
+                is_string($content) => 'string',
+                default => 'null',
+            },
+            'content_length' => is_string($content) ? strlen($content) : null,
             'context' => $this->context,
             'handler' => $handlerType,
         ]);
 
         Event::dispatch(
-            new TransformationFailed($exception, $this->content, $this->context)
+            new TransformationFailed($exception, $content, $this->context)
         );
+    }
+
+    /**
+     * Resolve the content for transformation.
+     *
+     * Unwraps QueueableMedia objects back to their original Media representation.
+     * This ensures that transformers receive the same Media object type whether
+     * processing synchronously or asynchronously.
+     */
+    protected function resolveContent(): string|Media|null
+    {
+        return $this->content instanceof QueueableMedia
+            ? $this->content->toMedia()
+            : $this->content;
     }
 }

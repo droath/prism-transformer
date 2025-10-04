@@ -6,6 +6,7 @@ namespace Droath\PrismTransformer\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Prism\Prism\ValueObjects\Media\Media;
 
 /**
  * Event dispatched when a transformation job begins execution.
@@ -22,11 +23,11 @@ class TransformationStarted
     /**
      * Create a new event instance.
      *
-     * @param string $content The content being transformed
+     * @param string|\Prism\Prism\ValueObjects\Media\Media|null $content The content being transformed (string or Media object)
      * @param array $context Additional context data (user_id, tenant_id, etc.)
      */
     public function __construct(
-        public readonly string $content,
+        public readonly string|Media|null $content,
         public readonly array $context = []
     ) {}
 }
