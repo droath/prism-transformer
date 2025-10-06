@@ -6,6 +6,7 @@ use Droath\PrismTransformer\PrismTransformer;
 use Droath\PrismTransformer\Contracts\PrismTransformerInterface;
 use Droath\PrismTransformer\Contracts\ContentFetcherInterface;
 use Droath\PrismTransformer\ValueObjects\TransformerResult;
+use Droath\PrismTransformer\Jobs\TransformationJob;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Foundation\Bus\PendingDispatch;
 
@@ -465,6 +466,150 @@ describe('PrismTransformer', function () {
                 ->transform();
 
             expect($result2)->toBeInstanceOf(PendingDispatch::class);
+        });
+    });
+
+    describe('setAsyncOptions method', function () {
+        test('sets asyncOptions property', function () {
+            $options = ['delay' => 60];
+
+            $result = $this->transformer->setAsyncOptions($options);
+
+            $reflection = new ReflectionClass($this->transformer);
+            $asyncOptionsProperty = $reflection->getProperty('asyncOptions');
+            $asyncOptionsProperty->setAccessible(true);
+
+            expect($asyncOptionsProperty->getValue($this->transformer))->toBe($options)
+                ->and($result)->toBe($this->transformer); // Method chaining
+        });
+
+        test('returns self for method chaining', function () {
+            $result = $this->transformer->setAsyncOptions(['delay' => 30]);
+
+            expect($result)->toBe($this->transformer);
+        });
+
+        test('has default empty asyncOptions property', function () {
+            $reflection = new ReflectionClass($this->transformer);
+            $asyncOptionsProperty = $reflection->getProperty('asyncOptions');
+            $asyncOptionsProperty->setAccessible(true);
+
+            expect($asyncOptionsProperty->getValue($this->transformer))->toBe([]);
+        });
+
+        test('can set delay option', function () {
+            $this->transformer->setAsyncOptions(['delay' => 120]);
+
+            $reflection = new ReflectionClass($this->transformer);
+            $asyncOptionsProperty = $reflection->getProperty('asyncOptions');
+            $asyncOptionsProperty->setAccessible(true);
+
+            expect($asyncOptionsProperty->getValue($this->transformer))
+                ->toBe(['delay' => 120]);
+        });
+
+        test('can set delay to zero', function () {
+            $this->transformer->setAsyncOptions(['delay' => 0]);
+
+            $reflection = new ReflectionClass($this->transformer);
+            $asyncOptionsProperty = $reflection->getProperty('asyncOptions');
+            $asyncOptionsProperty->setAccessible(true);
+
+            expect($asyncOptionsProperty->getValue($this->transformer))
+                ->toBe(['delay' => 0]);
+        });
+
+        test('asyncOptions is preserved during method chaining', function () {
+            $options = ['delay' => 45];
+            $closure = fn ($content) => TransformerResult::successful($content);
+
+            $result = $this->transformer
+                ->text('test content')
+                ->async()
+                ->setAsyncOptions($options)
+                ->using($closure);
+
+            $reflection = new ReflectionClass($this->transformer);
+            $asyncOptionsProperty = $reflection->getProperty('asyncOptions');
+            $asyncOptionsProperty->setAccessible(true);
+
+            expect($asyncOptionsProperty->getValue($this->transformer))->toBe($options)
+                ->and($result)->toBe($this->transformer);
+        });
+
+        test('asyncOptions can be overwritten', function () {
+            $firstOptions = ['delay' => 30];
+            $secondOptions = ['delay' => 90];
+
+            $this->transformer->setAsyncOptions($firstOptions);
+            $this->transformer->setAsyncOptions($secondOptions);
+
+            $reflection = new ReflectionClass($this->transformer);
+            $asyncOptionsProperty = $reflection->getProperty('asyncOptions');
+            $asyncOptionsProperty->setAccessible(true);
+
+            expect($asyncOptionsProperty->getValue($this->transformer))->toBe($secondOptions);
+        });
+
+        test('delay is applied to async job dispatch', function () {
+            Queue::fake();
+
+            $transformer = new \Droath\PrismTransformer\Tests\Stubs\SimpleAsyncTransformer();
+
+            $this->transformer
+                ->text('test content')
+                ->async()
+                ->setAsyncOptions(['delay' => 60])
+                ->using($transformer)
+                ->transform();
+
+            Queue::assertPushed(TransformationJob::class, function ($job) {
+                return $job->delay === 60;
+            });
+        });
+
+        test('no delay applied when delay is zero', function () {
+            Queue::fake();
+
+            $transformer = new \Droath\PrismTransformer\Tests\Stubs\SimpleAsyncTransformer();
+
+            $this->transformer
+                ->text('test content')
+                ->async()
+                ->setAsyncOptions(['delay' => 0])
+                ->using($transformer)
+                ->transform();
+
+            Queue::assertPushed(TransformationJob::class, function ($job) {
+                return $job->delay === null;
+            });
+        });
+
+        test('no delay applied when asyncOptions is empty', function () {
+            Queue::fake();
+
+            $transformer = new \Droath\PrismTransformer\Tests\Stubs\SimpleAsyncTransformer();
+
+            $this->transformer
+                ->text('test content')
+                ->async()
+                ->using($transformer)
+                ->transform();
+
+            Queue::assertPushed(TransformationJob::class, function ($job) {
+                return $job->delay === null;
+            });
+        });
+
+        test('asyncOptions accepts empty array', function () {
+            $this->transformer->setAsyncOptions(['delay' => 30]);
+            $this->transformer->setAsyncOptions([]);
+
+            $reflection = new ReflectionClass($this->transformer);
+            $asyncOptionsProperty = $reflection->getProperty('asyncOptions');
+            $asyncOptionsProperty->setAccessible(true);
+
+            expect($asyncOptionsProperty->getValue($this->transformer))->toBe([]);
         });
     });
 

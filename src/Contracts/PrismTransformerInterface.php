@@ -193,6 +193,36 @@ interface PrismTransformerInterface
     public function async(): static;
 
     /**
+     * Set options for asynchronous queue processing.
+     *
+     * Configures how the transformation job should behave when queued.
+     * This method allows fine-tuning of queue behavior such as execution delays.
+     *
+     * @param array $options Configuration options:
+     *   - delay (int): Number of seconds to delay job execution (default: 0)
+     *
+     * @return static Returns self for method chaining
+     *
+     * @example Delay execution by 60 seconds:
+     * ```php
+     * $transformer->text($content)
+     *     ->async()
+     *     ->setAsyncOptions(['delay' => 60])
+     *     ->using($transformer)
+     *     ->transform();
+     * ```
+     * @example Process immediately (default):
+     * ```php
+     * $transformer->text($content)
+     *     ->async()
+     *     ->setAsyncOptions(['delay' => 0])
+     *     ->using($transformer)
+     *     ->transform();
+     * ```
+     */
+    public function setAsyncOptions(array $options): static;
+
+    /**
      * Set the transformer to use for content processing.
      *
      * Accepts either a closure function or a TransformerInterface implementation.

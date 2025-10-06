@@ -81,6 +81,14 @@ class PrismTransformer implements PrismTransformerInterface
     protected bool $async = false;
 
     /**
+     * Options for asynchronous queue processing.
+     *
+     * Supported options:
+     *   - delay (int): Number of seconds to delay the job execution (default: 0)
+     */
+    protected array $asyncOptions = [];
+
+    /**
      * The input source for the transformation.
      */
     protected ?string $input = null;
@@ -178,6 +186,41 @@ class PrismTransformer implements PrismTransformerInterface
     }
 
     /**
+     * Set options for asynchronous queue processing.
+     *
+     * Configures how the transformation job should behave when queued.
+     * This method allows fine-tuning of queue behavior such as execution delays.
+     *
+     * @param array $options Configuration options:
+     *   - delay (int): Number of seconds to delay job execution (default: 0)
+     *
+     * @return static Returns this instance for method chaining
+     *
+     * @example Delay execution by 60 seconds:
+     * ```php
+     * $transformer->text($content)
+     *     ->async()
+     *     ->setAsyncOptions(['delay' => 60])
+     *     ->using($transformer)
+     *     ->transform();
+     * ```
+     * @example Process immediately (default):
+     * ```php
+     * $transformer->text($content)
+     *     ->async()
+     *     ->setAsyncOptions(['delay' => 0])
+     *     ->using($transformer)
+     *     ->transform();
+     * ```
+     */
+    public function setAsyncOptions(array $options): static
+    {
+        $this->asyncOptions = $options;
+
+        return $this;
+    }
+
+    /**
      * {@inheritDoc}
      */
     public function using(
@@ -251,11 +294,19 @@ class PrismTransformer implements PrismTransformerInterface
     protected function handleAsyncTransformation(
         \Closure|TransformerInterface $handler
     ): TransformerResult|PendingDispatch|null {
-        return TransformationJob::dispatch(
+        $job = TransformationJob::dispatch(
             $handler,
             $this->resolveContent(),
             $this->buildContext()
         );
+
+        $delay = $this->asyncOptions['delay'] ?? 0;
+
+        if ($delay > 0) {
+            $job->delay($delay);
+        }
+
+        return $job;
     }
 
     /**
