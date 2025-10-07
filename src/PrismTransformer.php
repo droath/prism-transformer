@@ -3,7 +3,6 @@
 namespace Droath\PrismTransformer;
 
 use Droath\PrismTransformer\Handlers\TextTransformerHandler;
-use Droath\PrismTransformer\Jobs\TransformationJob;
 use Droath\PrismTransformer\Handlers\UrlTransformerHandler;
 use Droath\PrismTransformer\Handlers\ImageTransformerHandler;
 use Droath\PrismTransformer\Handlers\DocumentTransformerHandler;
@@ -13,6 +12,7 @@ use Droath\PrismTransformer\ValueObjects\TransformerResult;
 use Droath\PrismTransformer\ValueObjects\QueueableMedia;
 use Droath\PrismTransformer\Contracts\ContentFetcherInterface;
 use Droath\PrismTransformer\Services\RateLimitService;
+use Droath\PrismTransformer\Services\ConfigurationService;
 use Illuminate\Foundation\Bus\PendingDispatch;
 use Prism\Prism\ValueObjects\Media\Media;
 
@@ -127,7 +127,8 @@ class PrismTransformer implements PrismTransformerInterface
      * Class constructor.
      */
     public function __construct(
-        protected RateLimitService $rateLimitService
+        protected RateLimitService $rateLimitService,
+        protected ConfigurationService $configurationService
     ) {}
 
     /**
@@ -294,7 +295,9 @@ class PrismTransformer implements PrismTransformerInterface
     protected function handleAsyncTransformation(
         \Closure|TransformerInterface $handler
     ): TransformerResult|PendingDispatch|null {
-        $job = TransformationJob::dispatch(
+        $jobClass = $this->configurationService->getJobClass();
+
+        $job = $jobClass::dispatch(
             $handler,
             $this->resolveContent(),
             $this->buildContext()

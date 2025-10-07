@@ -112,6 +112,36 @@ class ConfigurationService
     }
 
     /**
+     * Get the job class to use for async transformations.
+     *
+     * @return string The fully qualified job class name.
+     *
+     * @throws \InvalidArgumentException If the configured job class does not exist or does not extend TransformationJob.
+     */
+    public function getJobClass(): string
+    {
+        $jobClass = config(
+            'prism-transformer.transformation.job_class',
+            \Droath\PrismTransformer\Jobs\TransformationJob::class
+        );
+
+        if (! class_exists($jobClass)) {
+            throw new \InvalidArgumentException(
+                "The configured job class [{$jobClass}] does not exist."
+            );
+        }
+
+        if (! is_a($jobClass, \Droath\PrismTransformer\Jobs\TransformationJob::class, true)) {
+            throw new \InvalidArgumentException(
+                "The configured job class [{$jobClass}] must extend ".
+                \Droath\PrismTransformer\Jobs\TransformationJob::class
+            );
+        }
+
+        return $jobClass;
+    }
+
+    /**
      * Get an async queue name for transformations.
      *
      * @return string|null The queue name.

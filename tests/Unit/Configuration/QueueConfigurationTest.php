@@ -7,6 +7,7 @@ use Droath\PrismTransformer\PrismTransformer;
 use Droath\PrismTransformer\Services\ConfigurationService;
 use Droath\PrismTransformer\Services\RateLimitService;
 use Droath\PrismTransformer\Tests\Stubs\SummarizeTransformer;
+use Droath\PrismTransformer\Tests\Stubs\CustomTransformationJob;
 use Droath\PrismTransformer\Exceptions\RateLimitExceededException;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Cache;
@@ -593,6 +594,88 @@ describe('Queue Configuration', function () {
             $configService = app(ConfigurationService::class);
 
             expect($configService->getQueueConnection())->toBe('database');
+        });
+    });
+
+    describe('Custom Job Class Configuration', function () {
+        test('uses default TransformationJob when no custom class configured', function () {
+            $configService = app(ConfigurationService::class);
+
+            $jobClass = $configService->getJobClass();
+
+            expect($jobClass)->toBe(TransformationJob::class);
+        });
+
+        test('async transformation uses configured custom job class', function () {
+            config([
+                'prism-transformer.transformation.job_class' => CustomTransformationJob::class,
+            ]);
+
+            // Force rebind to pick up new config
+            app()->forgetInstance(ConfigurationService::class);
+
+            $configService = app(ConfigurationService::class);
+
+            // Verify the configuration is correctly set
+            expect($configService->getJobClass())->toBe(CustomTransformationJob::class);
+
+            $transformer = app(PrismTransformer::class);
+            $transformerInstance = app(SummarizeTransformer::class);
+
+            $result = $transformer
+                ->text('Test content')
+                ->async()
+                ->using($transformerInstance)
+                ->transform();
+
+            // Async transformation should return PendingDispatch
+            expect($result)->toBeInstanceOf(\Illuminate\Foundation\Bus\PendingDispatch::class);
+        });
+
+        test('custom job class receives correct configuration', function () {
+            config([
+                'prism-transformer.transformation.job_class' => CustomTransformationJob::class,
+                'prism-transformer.transformation.queue_connection' => 'redis',
+                'prism-transformer.transformation.async_queue' => 'custom-queue',
+                'prism-transformer.transformation.timeout' => 120,
+                'prism-transformer.transformation.tries' => 5,
+            ]);
+
+            $transformer = app(SummarizeTransformer::class);
+            $job = new CustomTransformationJob($transformer, 'Test content', []);
+
+            expect($job)->toBeInstanceOf(TransformationJob::class)
+                ->and($job->connection)->toBe('redis')
+                ->and($job->queue)->toBe('custom-queue')
+                ->and($job->timeout)->toBe(120)
+                ->and($job->tries)->toBe(5);
+        });
+
+        test('throws exception for non-existent job class', function () {
+            config([
+                'prism-transformer.transformation.job_class' => 'App\NonExistentJob',
+            ]);
+
+            $configService = app(ConfigurationService::class);
+
+            expect(fn () => $configService->getJobClass())
+                ->toThrow(\InvalidArgumentException::class, 'The configured job class [App\NonExistentJob] does not exist.');
+        });
+
+        test('throws exception for job class that does not extend TransformationJob', function () {
+            $invalidJobClass = new class
+            {
+                // Does not extend TransformationJob
+            };
+
+            config([
+                'prism-transformer.transformation.job_class' => get_class($invalidJobClass),
+            ]);
+
+            $configService = app(ConfigurationService::class);
+
+            expect(fn () => $configService->getJobClass())
+                ->toThrow(\InvalidArgumentException::class);
         });
     });
 })->group('configuration', 'queue', 'unit', 'integration', 'rate-limiting');

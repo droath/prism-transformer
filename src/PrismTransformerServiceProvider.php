@@ -43,6 +43,7 @@ class PrismTransformerServiceProvider extends PackageServiceProvider
         $this->app->bind(PrismTransformer::class, function ($app) {
             return new PrismTransformer(
                 $app->make(RateLimitService::class),
+                $app->make(ConfigurationService::class),
             );
         });
     }

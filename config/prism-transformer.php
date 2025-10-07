@@ -137,6 +137,7 @@ return [
     */
 
     'transformation' => [
+        'job_class' => \Droath\PrismTransformer\Jobs\TransformationJob::class,
         'async_queue' => env('PRISM_TRANSFORMER_ASYNC_QUEUE', 'default'),
         'queue_connection' => env('PRISM_TRANSFORMER_QUEUE_CONNECTION'),
         'timeout' => env('PRISM_TRANSFORMER_TIMEOUT', 60),

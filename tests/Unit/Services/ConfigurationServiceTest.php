@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Droath\PrismTransformer\Enums\Provider;
 use Droath\PrismTransformer\Services\ConfigurationService;
+use Droath\PrismTransformer\Tests\Stubs\CustomTransformationJob;
 use Illuminate\Support\Facades\Config;
 
 describe('ConfigurationService', function () {
@@ -74,6 +75,39 @@ describe('ConfigurationService', function () {
             $queueName = $this->configService->getAsyncQueue();
 
             expect($queueName)->toBe('default');
+        });
+
+        test('can get default job class', function () {
+            $jobClass = $this->configService->getJobClass();
+
+            expect($jobClass)->toBe(\Droath\PrismTransformer\Jobs\TransformationJob::class);
+        });
+
+        test('can get custom job class from configuration', function () {
+            Config::set('prism-transformer.transformation.job_class', CustomTransformationJob::class);
+
+            $jobClass = $this->configService->getJobClass();
+
+            expect($jobClass)->toBe(CustomTransformationJob::class);
+        });
+
+        test('throws exception when job class does not exist', function () {
+            Config::set('prism-transformer.transformation.job_class', 'App\NonExistentJobClass');
+
+            expect(fn () => $this->configService->getJobClass())
+                ->toThrow(\InvalidArgumentException::class, 'The configured job class [App\NonExistentJobClass] does not exist.');
+        });
+
+        test('throws exception when job class does not extend TransformationJob', function () {
+            $invalidJobClass = new class
+            {
+                // Does not extend TransformationJob
+            };
+
+            Config::set('prism-transformer.transformation.job_class', get_class($invalidJobClass));
+
+            expect(fn () => $this->configService->getJobClass())
+                ->toThrow(\InvalidArgumentException::class);
         });
     });
 
