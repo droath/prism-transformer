@@ -29,8 +29,7 @@ caching, automatic schema generation, and robust error handling.
   dependency injection
 - **🎯 Laravel Model Output**: Direct transformation to Laravel Eloquent models
   with automatic schema generation
-- **🔧 Laravel Integration**: Service provider, facades, configuration, and
-  Artisan commands
+- **🔧 Laravel Integration**: Service provider, facades, and configuration
 - **✅ Validation Support**: Built-in Laravel validation integration
 - **🛡️ Security Features**: Blocked domains protection for content fetching
 - **🏗️ Service-Oriented Architecture**: Clean separation of concerns with
@@ -1177,18 +1176,6 @@ $items = collect($largeDataSet)
         });
     })
     ->flatten();
-```
-
-## Artisan Commands
-
-The package includes helpful Artisan commands:
-
-```bash
-# Clear transformation cache
-php artisan prism-transformer:cache:clear
-
-# Generate a custom transformer class
-php artisan make:prism-transformer BlogSummarizer
 ```
 
 ## Advanced Configuration
